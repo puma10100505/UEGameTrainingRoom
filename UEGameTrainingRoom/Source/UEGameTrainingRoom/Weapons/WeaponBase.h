@@ -12,13 +12,15 @@ DECLARE_LOG_CATEGORY_EXTERN(LogWeapon, Log, All);
 
 
 UCLASS(Blueprintable)
-class TRAININGROOM_API AWeaponBase : public AActor
+class UEGAMETRAININGROOM_API AWeaponBase : public AActor
 {
 	GENERATED_BODY()
 	
 public:	
 	// Sets default values for this actor's properties
 	AWeaponBase();
+
+	FORCEINLINE const FWeaponModelData& GetWeaponModelData() const { return WeaponData; }
 
 protected:
 	// Called when the game starts or when spawned
@@ -62,8 +64,8 @@ protected:		// RPC
 	void ServerFire_Implementation();
 
 	UFUNCTION(Client, Reliable)
-	virtual void ClientFireEffect(const FHitResult& HitInfo);
-	void ClientFireEffect_Implementation(const FHitResult& HitInfo);
+	virtual void ClientFireEffect(bool IsHit, const FHitResult& HitInfo);
+	void ClientFireEffect_Implementation(bool IsHit, const FHitResult& HitInfo);
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = WeaponData)

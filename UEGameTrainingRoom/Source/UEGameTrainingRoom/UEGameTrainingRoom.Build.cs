@@ -8,6 +8,14 @@ public class UEGameTrainingRoom : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "HeadMountedDisplay" });
+		PublicDependencyModuleNames.AddRange(new string[] { 
+			"Core", "CoreUObject", "Engine", "InputCore", "HeadMountedDisplay", "UMG" });
+
+		PrivateIncludePaths.AddRange(new string[] {
+			"UEGameTrainingRoom/Characters",
+			"UEGameTrainingRoom/Weapons",
+			"UEGameTrainingRoom/UI",
+			"UEGameTrainingRoom/Controllers"
+		});
 	}
 }

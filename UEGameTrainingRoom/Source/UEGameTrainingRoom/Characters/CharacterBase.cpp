@@ -8,7 +8,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "TrainingRoom/Weapons/WeaponBase.h"
+#include "UEGameTrainingRoom/Weapons/WeaponBase.h"
 #include "Net/UnrealNetwork.h"
 #include "Math/UnrealMathUtility.h"
 
@@ -122,13 +122,14 @@ void ACharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	PlayerInputComponent->BindAxis("LookUpRate", this, &ACharacterBase::LookUpAtRate);
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
-	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &ACharacterBase::Fire);
+	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &ACharacterBase::OnStartFire);
+	PlayerInputComponent->BindAction("Fire", IE_Released, this, &ACharacterBase::OnStopFire);
 	PlayerInputComponent->BindAction("Aim", IE_Pressed, this, &ACharacterBase::SwitchToAiming);
 	PlayerInputComponent->BindAction("Aim", IE_Released, this, &ACharacterBase::RecoveryFromAiming);
 
 }
 
-void ACharacterBase::Fire()
+void ACharacterBase::OnStartFire()
 {
 	UE_LOG(LogWeapon, Log, TEXT("Entry of fire in character, Role: %d, NetMode: %d"), GetLocalRole(), GetNetMode());
 
@@ -139,7 +140,28 @@ void ACharacterBase::Fire()
 
 	if (IsValid(PrimaryWeapon))
 	{
+		UE_LOG(LogWeapon, Error, TEXT("PrimaryWeapon is not exist"));
+		return;
+	}
+
+	GetWorldTimerManager().SetTimer(TimerHandle_Fire, this, &ACharacterBase::Fire, 
+		PrimaryWeapon->GetWeaponModelData().FireInterval, true);
+}
+
+void ACharacterBase::OnStopFire()
+{
+	GetWorldTimerManager().ClearTimer(TimerHandle_Fire);
+}
+
+void ACharacterBase::Fire()
+{
+	if (IsValid(PrimaryWeapon))
+	{
 		PrimaryWeapon->Fire();
+	}
+	else 
+	{
+		UE_LOG(LogWeapon, Log, TEXT("Weapon is not valid"));
 	}
 }
 

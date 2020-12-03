@@ -78,12 +78,12 @@ void AWeaponBase::FireProcess()
 
 	// 射线命中检测
 	FHitResult HitInfo;
-	WeaponLineTrace_Single(HitInfo);
+	bool IsHit = WeaponLineTrace_Single(HitInfo);
 
 	// Fire client VFX
 	if (GetLocalRole() == ROLE_Authority)
 	{
-		ClientFireEffect(HitInfo);
+		ClientFireEffect(IsHit, HitInfo);
 	}
 }
 
@@ -228,8 +228,27 @@ void AWeaponBase::ServerFire_Implementation()
 	Fire();
 }
 
-void AWeaponBase::ClientFireEffect_Implementation(const FHitResult& HitInfo)
+void AWeaponBase::ClientFireEffect_Implementation(bool IsHit, const FHitResult& HitInfo)
 {	
-	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), WeaponData.ImpactFlash, FTransform(HitInfo.Location));
+	if (IsHit)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), WeaponData.ImpactFlash, FTransform(HitInfo.Location));
+	}
+	
+	if (IsValid(GetOwnerCharacter()))
+	{
+		FActorSpawnParameters Params;
+		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		FVector TrailStart_Loc = GetOwnerCharacter()->GetMesh()->GetSocketLocation(WeaponData.MuzzleName);
+		FVector TrailStop_Loc = HitInfo.Location;
+		
+		FRotator TrailStart_Rot = (TrailStop_Loc - TrailStart_Loc).Rotation(); //GetOwnerCharacter()->GetMesh()->GetSocketRotation(WeaponData.MuzzleName);
+
+		GetWorld()->SpawnActor<AActor>(WeaponData.GunTrail, TrailStart_Loc, TrailStart_Rot, Params);
+	} 
+	else 
+	{
+		UE_LOG(LogWeapon, Log, TEXT("Owner character is not exist in client"));
+	}
 }
 

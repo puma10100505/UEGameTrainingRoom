@@ -10,7 +10,7 @@
  * 
  */
 UCLASS()
-class TRAININGROOM_API APlayerControllerBase : public APlayerController
+class UEGAMETRAININGROOM_API APlayerControllerBase : public APlayerController
 {
 	GENERATED_BODY()
 

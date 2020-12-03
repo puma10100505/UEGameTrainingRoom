@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Weapons/WeaponBase.h"
+#include "WeaponBase.h"
 
 
 #include "BelicaSMG.generated.h"
@@ -12,7 +12,7 @@
  * 
  */
 UCLASS()
-class TRAININGROOM_API ABelicaSMG : public AWeaponBase
+class UEGAMETRAININGROOM_API ABelicaSMG : public AWeaponBase
 {
 	GENERATED_BODY()
 	

@@ -4,12 +4,16 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "Engine/EngineTypes.h"
+#include "TimerManager.h"
+
+
 #include "CharacterBase.generated.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogCharacter, Log, All);
 
 UCLASS()
-class TRAININGROOM_API ACharacterBase : public ACharacter
+class UEGAMETRAININGROOM_API ACharacterBase : public ACharacter
 {
 	GENERATED_BODY()
 
@@ -50,6 +54,9 @@ protected:
 
 	virtual void SwitchToAiming();
 	virtual void RecoveryFromAiming();
+
+	virtual void OnStartFire();
+	virtual void OnStopFire();
 
 	UFUNCTION()
 	void OnRep_PrimaryWeapon(class AWeaponBase* LastWeapon);
@@ -130,4 +137,7 @@ protected:
 	// 移动速度
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, Category = Attributes)
 	float WalkSpeed;
+
+private:
+	FTimerHandle TimerHandle_Fire;
 };

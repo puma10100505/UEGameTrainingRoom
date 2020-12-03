@@ -39,4 +39,7 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	class UParticleSystem* ImpactFlash;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	class TSubclassOf<AActor> GunTrail;
 };

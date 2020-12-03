@@ -10,7 +10,7 @@
  * 
  */
 UCLASS()
-class TRAININGROOM_API UUserWidgetBase : public UUserWidget
+class UEGAMETRAININGROOM_API UUserWidgetBase : public UUserWidget
 {
 	GENERATED_BODY()
 	
