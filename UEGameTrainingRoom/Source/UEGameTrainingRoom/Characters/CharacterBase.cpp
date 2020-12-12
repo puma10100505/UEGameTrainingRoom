@@ -77,6 +77,10 @@ void ACharacterBase::InitializeWeapon()
 void ACharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	
+	OnHealthChangedDelegator.Broadcast(Health, MaxHealth);
+	OnArmorChangedDelegator.Broadcast(Armor, MaxArmor);
 }
 
 void ACharacterBase::InitializeAttributes()
@@ -87,6 +91,9 @@ void ACharacterBase::InitializeAttributes()
 	bIsFiring = false;
 	bIsPreparingFire = false;
 	WalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
+
+
+	UE_LOG(LogCharacter, Log, TEXT("After init, health: %f, armor: %f"), Health, Armor);
 }
 
 void ACharacterBase::PostInitializeComponents()
@@ -138,14 +145,14 @@ void ACharacterBase::OnStartFire()
 		return;
 	}
 
-	if (IsValid(PrimaryWeapon))
+	if (IsValid(PrimaryWeapon) == false)
 	{
 		UE_LOG(LogWeapon, Error, TEXT("PrimaryWeapon is not exist"));
 		return;
 	}
 
 	GetWorldTimerManager().SetTimer(TimerHandle_Fire, this, &ACharacterBase::Fire, 
-		PrimaryWeapon->GetWeaponModelData().FireInterval, true);
+		PrimaryWeapon->GetWeaponModelData().FireInterval, true, 0.f);
 }
 
 void ACharacterBase::OnStopFire()
@@ -288,6 +295,7 @@ void ACharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(ACharacterBase, bIsAiming);
 	DOREPLIFETIME(ACharacterBase, PrimaryWeapon);
 	DOREPLIFETIME(ACharacterBase, WalkSpeed);
+	DOREPLIFETIME(ACharacterBase, bIsDead);
 }
 
 bool ACharacterBase::ServerModifyMoveSpeed_Validate(float NewSpeed)
@@ -333,3 +341,77 @@ void ACharacterBase::ServerRecoveryFromAiming_Implementation()
 	RecoveryFromAiming();
 }
 
+void ACharacterBase::TakeHurt(const AWeaponBase* SourceWeapon, float Distance)
+{
+	if (GetLocalRole() == ROLE_Authority)
+	{
+		UE_LOG(LogCharacter, Log, TEXT("Character was hit by weapon, role: %d"), GetLocalRole());
+		if (SourceWeapon)
+		{
+			const FWeaponModelData& WeaponData = SourceWeapon->GetWeaponModelData();
+			float RealDamage = (1.0f - Distance / WeaponData.ShootRange + 0.1f) * WeaponData.Damage;
+
+			RealDamage = FMath::Clamp<float>(RealDamage, 0.f, WeaponData.Damage);
+
+			UE_LOG(LogCharacter, Log, TEXT("Distance: %f, ShootRange: %f, WeaponDamage: %f, RealDamage: %f"), 
+				Distance, WeaponData.ShootRange, WeaponData.Damage, RealDamage);
+
+			ChangeLife(-RealDamage);
+
+			if (Health <= 0.f)
+			{
+				KillToDeath();
+			}
+		}
+	}
+}
+
+void ACharacterBase::ChangeLife(float Value)
+{
+	float OldArmor = Armor;
+	float OldHealth = Health;
+
+	if (Armor > 0)
+	{
+		Armor += Value;
+		if (Armor < 0)
+		{
+			Health += Armor;
+		}
+	}
+	else 
+	{
+		Health += Value;
+	}
+
+	if (Health < 0) 
+	{
+		Health = 0;
+	}
+	
+	UE_LOG(LogCharacter, Log, TEXT("OldArmor: %f, CurrArmor: %f, OldHealth: %f, CurrHealth: %f"), 
+		OldArmor, Armor, OldHealth, Health);
+}
+
+void ACharacterBase::KillToDeath()
+{
+	bIsDead = true;
+	UE_LOG(LogCharacter, Log, TEXT("Character is killed to death"));
+
+}
+
+void ACharacterBase::OnRep_HealthChanged(float OldHealth)
+{
+	if (OldHealth != Health)
+	{
+		OnHealthChangedDelegator.Broadcast(Health, MaxHealth);
+	}
+}
+
+void ACharacterBase::OnRep_ArmorChanged(float OldArmor)
+{
+	if (OldArmor != Armor)
+	{
+		OnArmorChangedDelegator.Broadcast(Armor, MaxArmor);
+	}
+}

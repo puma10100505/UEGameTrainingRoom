@@ -10,6 +10,7 @@
 
 DECLARE_LOG_CATEGORY_EXTERN(LogWeapon, Log, All);
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FWeaponAmmoChanged, int32, CurrentAmmo, int32, TotalLeftAmmo);
 
 UCLASS(Blueprintable)
 class UEGAMETRAININGROOM_API AWeaponBase : public AActor
@@ -21,6 +22,12 @@ public:
 	AWeaponBase();
 
 	FORCEINLINE const FWeaponModelData& GetWeaponModelData() const { return WeaponData; }
+	FORCEINLINE int32 GetCurrentAmmo() const { return CurrentAmmo; }
+	FORCEINLINE int32 GetTotalLeftAmmo() const { return TotalLeftAmmo; }
+	FORCEINLINE FWeaponAmmoChanged& GetWeaponAmmoChangedDelegate() 
+	{
+		return WeaponAmmoChangedDelegate; 
+	}
 
 protected:
 	// Called when the game starts or when spawned
@@ -56,7 +63,7 @@ public:
 
 	class ACharacterBase* GetOwnerCharacter() const;
 
-protected:		// RPC
+protected:
 	// [Server + Local]
 	UFUNCTION(Server, Reliable, WithValidation)
 	virtual void ServerFire();
@@ -67,16 +74,25 @@ protected:		// RPC
 	virtual void ClientFireEffect(bool IsHit, const FHitResult& HitInfo);
 	void ClientFireEffect_Implementation(bool IsHit, const FHitResult& HitInfo);
 
+	UFUNCTION()
+	void OnRep_CurrentAmmo(int32 OldCurrentAmmo);
+
+	UFUNCTION()
+	void OnRep_TotalLeftAmmo(int32 OldTotalLeftAmmo);
+
 protected:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = WeaponData)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = WeaponData, meta = (DisplayPriority = "1"))
 	FWeaponModelData WeaponData;
 
 	UPROPERTY(BlueprintReadWrite, Replicated, Category = Owner)
 	class ACharacterBase* OwnerCharacter;
 
-	UPROPERTY(BlueprintReadWrite, Replicated, Category = WeaponData)
+	UPROPERTY(BlueprintReadWrite, ReplicatedUsing = OnRep_CurrentAmmo, Category = WeaponData)
 	int32 CurrentAmmo;
 
-	UPROPERTY(BlueprintReadWrite, Replicated, Category = WeaponData)
+	UPROPERTY(BlueprintReadWrite, ReplicatedUsing = OnRep_TotalLeftAmmo, Category = WeaponData)
 	int32 TotalLeftAmmo;
+
+	UPROPERTY(BlueprintAssignable, Category = EventDispachers)
+	FWeaponAmmoChanged WeaponAmmoChangedDelegate;
 };

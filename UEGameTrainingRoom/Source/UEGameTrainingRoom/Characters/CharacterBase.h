@@ -6,14 +6,19 @@
 #include "GameFramework/Character.h"
 #include "Engine/EngineTypes.h"
 #include "TimerManager.h"
+#include "HurtableInterface.h"
+#include "LifeInterface.h"
 
 
 #include "CharacterBase.generated.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogCharacter, Log, All);
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FCharacterHealthChanged, float, NewHealth, float, MaxHealth);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FCharacterArmorChanged, float, NewArmor, float, MaxArmor);
+
 UCLASS()
-class UEGAMETRAININGROOM_API ACharacterBase : public ACharacter
+class UEGAMETRAININGROOM_API ACharacterBase : public ACharacter, public IHurtable, public ILife
 {
 	GENERATED_BODY()
 
@@ -41,7 +46,20 @@ public:
 
 	virtual void Fire();
 
+	// [Interface Implementation]
+	UFUNCTION(BlueprintCallable)
+	virtual void TakeHurt(const class AWeaponBase* SourceWeapon, float Distance) override;
+
+	// [Interface Implementation]
+	UFUNCTION(BlueprintCallable)
+	virtual void ChangeLife(float Value) override;
+
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+	FORCEINLINE class AWeaponBase* GetCurrentWeapon() const { return PrimaryWeapon; }
+	
+	FORCEINLINE FCharacterHealthChanged& GetHealthChangedDelegator() { return OnHealthChangedDelegator; }
+	FORCEINLINE FCharacterArmorChanged& GetArmorChangedDelegator() { return OnArmorChangedDelegator; }
 
 protected:
 	void MoveForward(float Value);
@@ -58,12 +76,20 @@ protected:
 	virtual void OnStartFire();
 	virtual void OnStopFire();
 
+	virtual void KillToDeath();
+
 	UFUNCTION()
 	void OnRep_PrimaryWeapon(class AWeaponBase* LastWeapon);
 
 	virtual void InterplateMoveSpeed();
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	UFUNCTION()
+	void OnRep_HealthChanged(float OldHealth);
+
+	UFUNCTION()
+	void OnRep_ArmorChanged(float OldArmor);
 
 protected: // RPC
 	UFUNCTION(Server, Reliable, WithValidation)
@@ -115,21 +141,24 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Weapons)
 	TSubclassOf<AWeaponBase> InitialWeaponClass;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, Category = Attributes)
+	UPROPERTY(BlueprintReadWrite, ReplicatedUsing = OnRep_HealthChanged, Category = Attributes)
 	float Health;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Attributes)
 	float MaxHealth;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, Category = Attributes)
+	UPROPERTY(BlueprintReadWrite, ReplicatedUsing = OnRep_ArmorChanged, Category = Attributes)
 	float Armor;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Attributes)
 	float MaxArmor;
 
 	// 是否准备射击
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Replicated, Category = Weapons)
+	UPROPERTY(BlueprintReadWrite, Replicated, Category = Weapons)
 	bool bIsPreparingFire;
+
+	UPROPERTY(BlueprintReadWrite, Replicated, Category = Attributes)
+	uint8 bIsDead : 1;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = CharacterAnim)
 	class UAnimMontage* AimMontage;
@@ -137,6 +166,12 @@ protected:
 	// 移动速度
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, Category = Attributes)
 	float WalkSpeed;
+
+	UPROPERTY(BlueprintAssignable, Category = EventDispachers)
+	FCharacterHealthChanged OnHealthChangedDelegator;
+
+	UPROPERTY(BlueprintAssignable, Category = EventDispachers)
+	FCharacterArmorChanged OnArmorChangedDelegator;
 
 private:
 	FTimerHandle TimerHandle_Fire;

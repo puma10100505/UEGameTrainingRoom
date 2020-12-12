@@ -12,10 +12,12 @@ public class UEGameTrainingRoom : ModuleRules
 			"Core", "CoreUObject", "Engine", "InputCore", "HeadMountedDisplay", "UMG" });
 
 		PrivateIncludePaths.AddRange(new string[] {
+			"UEGameTrainingRoom",
 			"UEGameTrainingRoom/Characters",
 			"UEGameTrainingRoom/Weapons",
 			"UEGameTrainingRoom/UI",
-			"UEGameTrainingRoom/Controllers"
+			"UEGameTrainingRoom/Controllers",
+			"UEGameTrainingRoom/Shared"
 		});
 	}
 }

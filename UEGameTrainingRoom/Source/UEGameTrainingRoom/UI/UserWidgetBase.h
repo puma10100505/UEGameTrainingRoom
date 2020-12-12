@@ -6,12 +6,20 @@
 #include "Blueprint/UserWidget.h"
 #include "UserWidgetBase.generated.h"
 
+DECLARE_LOG_CATEGORY_EXTERN(LogUI, Log, All);
+
 /**
  * 
  */
-UCLASS()
+UCLASS(Blueprintable)
 class UEGAMETRAININGROOM_API UUserWidgetBase : public UUserWidget
 {
 	GENERATED_BODY()
-	
+
+public:
+	UUserWidgetBase(const FObjectInitializer& ObjectInitializer)
+		:Super(ObjectInitializer){}
+
+protected:
+	virtual float CalcPercent(float NewVal, float MaxVal);
 };

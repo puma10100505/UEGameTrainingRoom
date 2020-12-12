@@ -26,6 +26,8 @@ AWeaponBase::AWeaponBase()
 void AWeaponBase::BeginPlay()
 {
 	Super::BeginPlay();	
+
+	WeaponAmmoChangedDelegate.Broadcast(CurrentAmmo, TotalLeftAmmo);
 }
 
 // Called every frame
@@ -80,6 +82,15 @@ void AWeaponBase::FireProcess()
 	FHitResult HitInfo;
 	bool IsHit = WeaponLineTrace_Single(HitInfo);
 
+	// Take Damage
+	if (IsHit)
+	{
+		if (ACharacterBase* HitCharacter = Cast<ACharacterBase>(HitInfo.GetActor()))
+		{
+			HitCharacter->TakeHurt(this, HitInfo.Distance);
+		}
+	}
+
 	// Fire client VFX
 	if (GetLocalRole() == ROLE_Authority)
 	{
@@ -127,21 +138,6 @@ bool AWeaponBase::WeaponLineTrace_Single(FHitResult& HitInfo)
 	QueryParams.bReturnPhysicalMaterial = true;
 	bool bIsHit = GetWorld()->LineTraceSingleByChannel(HitInfo, StartPos, EndPos, ECC_Pawn, QueryParams);
 
-	/* For Debug */
-	if (bIsHit)
-	{
-		// Hit
-		DrawDebugLine(GetWorld(), GetOwnerCharacter()->GetMesh()->GetSocketLocation(WeaponData.MuzzleName), 
-			EndPos, FColor::Red, false, 1.f, ECC_WorldStatic, 1.f);
-	}
-	else
-	{
-		// Missed
-		DrawDebugLine(GetWorld(), GetOwnerCharacter()->GetMesh()->GetSocketLocation(WeaponData.MuzzleName),
-			EndPos, FColor::Green, false, 1.f, ECC_WorldStatic, 1.f);
-	}
-	/* ******** */
-
 	return bIsHit;
 }
 
@@ -150,8 +146,8 @@ void AWeaponBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME_CONDITION(AWeaponBase, OwnerCharacter, COND_OwnerOnly);
-	DOREPLIFETIME_CONDITION(AWeaponBase, CurrentAmmo, COND_OwnerOnly);
-	DOREPLIFETIME_CONDITION(AWeaponBase, TotalLeftAmmo, COND_OwnerOnly);
+	DOREPLIFETIME_CONDITION(AWeaponBase, CurrentAmmo, COND_SimulatedOnly);
+	DOREPLIFETIME_CONDITION(AWeaponBase, TotalLeftAmmo, COND_SimulatedOnly);
 }
 
 void AWeaponBase::InitializeWeaponData()
@@ -168,6 +164,8 @@ void AWeaponBase::ConsumeAmmo()
 	{
 		Reload();
 	}
+
+	// WeaponAmmoChangedDelegate.Broadcast(CurrentAmmo, TotalLeftAmmo);
 }
 
 bool AWeaponBase::NeedReload()
@@ -232,6 +230,7 @@ void AWeaponBase::ClientFireEffect_Implementation(bool IsHit, const FHitResult& 
 {	
 	if (IsHit)
 	{
+		// Impact effect
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), WeaponData.ImpactFlash, FTransform(HitInfo.Location));
 	}
 	
@@ -241,8 +240,12 @@ void AWeaponBase::ClientFireEffect_Implementation(bool IsHit, const FHitResult& 
 		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		FVector TrailStart_Loc = GetOwnerCharacter()->GetMesh()->GetSocketLocation(WeaponData.MuzzleName);
 		FVector TrailStop_Loc = HitInfo.Location;
+		if (IsHit == false)
+		{
+			TrailStop_Loc = HitInfo.TraceEnd;
+		}
 		
-		FRotator TrailStart_Rot = (TrailStop_Loc - TrailStart_Loc).Rotation(); //GetOwnerCharacter()->GetMesh()->GetSocketRotation(WeaponData.MuzzleName);
+		FRotator TrailStart_Rot = (TrailStop_Loc - TrailStart_Loc).Rotation();
 
 		GetWorld()->SpawnActor<AActor>(WeaponData.GunTrail, TrailStart_Loc, TrailStart_Rot, Params);
 	} 
@@ -252,3 +255,18 @@ void AWeaponBase::ClientFireEffect_Implementation(bool IsHit, const FHitResult& 
 	}
 }
 
+void AWeaponBase::OnRep_CurrentAmmo(int32 OldCurrentAmmo)
+{
+	if (OldCurrentAmmo != CurrentAmmo)
+	{
+		WeaponAmmoChangedDelegate.Broadcast(CurrentAmmo, TotalLeftAmmo);
+	}
+}
+
+void AWeaponBase::OnRep_TotalLeftAmmo(int32 OldTotalLeftAmmo)
+{
+	if (OldTotalLeftAmmo != TotalLeftAmmo)
+	{
+		WeaponAmmoChangedDelegate.Broadcast(CurrentAmmo, TotalLeftAmmo);
+	}
+}
