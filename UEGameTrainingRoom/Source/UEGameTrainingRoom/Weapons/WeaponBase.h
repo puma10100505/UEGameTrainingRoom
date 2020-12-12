@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -70,9 +70,15 @@ protected:
 	bool ServerFire_Validate();
 	void ServerFire_Implementation();
 
-	UFUNCTION(Client, Reliable)
+	UFUNCTION(NetMulticast, Unreliable)
 	virtual void ClientFireEffect(bool IsHit, const FHitResult& HitInfo);
 	void ClientFireEffect_Implementation(bool IsHit, const FHitResult& HitInfo);
+
+	UFUNCTION(NetMulticast, Unreliable)
+	virtual void ClientFireMuzzleEffect(const FName& MuzzleName, class USoundBase* MuzzleSound, class UParticleSystem* MuzzleFlash,
+		class ACharacterBase* InCharacter);
+	void ClientFireMuzzleEffect_Implementation(const FName& MuzzleName, class USoundBase* MuzzleSound, class UParticleSystem* MuzzleFlash,
+		class ACharacterBase* InCharacter);
 
 	UFUNCTION()
 	void OnRep_CurrentAmmo(int32 OldCurrentAmmo);
@@ -95,4 +101,5 @@ protected:
 
 	UPROPERTY(BlueprintAssignable, Category = EventDispachers)
 	FWeaponAmmoChanged WeaponAmmoChangedDelegate;
+
 };

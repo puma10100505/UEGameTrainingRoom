@@ -22,7 +22,7 @@ bool UPlayerMainUI::Initialize()
         UE_LOG(LogTemp, Warning, TEXT("Not found current weapon"));
         return false;
     }
-
+      
     Weapon->GetWeaponAmmoChangedDelegate().AddDynamic(this, &UPlayerMainUI::OnAmmoChanged);
     
     Character->GetHealthChangedDelegator().AddDynamic(this, &UPlayerMainUI::OnHealthChanged);

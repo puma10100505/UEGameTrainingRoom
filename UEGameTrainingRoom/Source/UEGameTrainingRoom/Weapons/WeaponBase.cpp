@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "WeaponBase.h"
@@ -10,6 +10,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
 #include "Particles/ParticleSystem.h"
+#include "Components/ArrowComponent.h"
 
 
 DEFINE_LOG_CATEGORY(LogWeapon);
@@ -37,6 +38,27 @@ void AWeaponBase::Tick(float DeltaTime)
 
 }
 
+void AWeaponBase::ClientFireMuzzleEffect_Implementation(const FName& MuzzleName, USoundBase* MuzzleSound, UParticleSystem* MuzzleFlash, 
+	class ACharacterBase* InCharacter)
+{
+	// Play Fire Sound2D
+	UGameplayStatics::PlaySound2D(GetWorld(), MuzzleSound);
+
+	if (IsValid(InCharacter))
+	{
+		UGameplayStatics::SpawnEmitterAttached(MuzzleFlash,
+			InCharacter->GetMesh(), MuzzleName,
+			InCharacter->GetMesh()->GetSocketLocation(MuzzleName),
+			InCharacter->GetMesh()->GetSocketRotation(MuzzleName),
+			//InCharacter->GetArrowComponent()->GetForwardVector().Rotation(),
+			FVector(1.0f, 1.0f, 1.0f),
+			EAttachLocation::KeepWorldPosition);
+		
+
+		UE_LOG(LogWeapon, Log, TEXT("After emitter attach"));
+	}
+}
+
 void AWeaponBase::Fire()
 {
 	if (CanFire())
@@ -48,19 +70,10 @@ void AWeaponBase::Fire()
 
 			if (GetNetMode() == ENetMode::NM_Client)
 			{
-				// Play Fire Sound2D
-				UGameplayStatics::PlaySound2D(GetWorld(), WeaponData.MuzzleSound);
-
 				if (IsValid(GetOwnerCharacter()))
 				{
-					UGameplayStatics::SpawnEmitterAttached(WeaponData.MuzzleFlash,
-						GetOwnerCharacter()->GetMesh(), WeaponData.MuzzleName, 
-						GetOwnerCharacter()->GetMesh()->GetSocketLocation(WeaponData.MuzzleName),
-						GetOwnerCharacter()->GetMesh()->GetSocketRotation(WeaponData.MuzzleName), 
-						FVector(1.0f, 1.0f, 1.0f),
-						EAttachLocation::KeepWorldPosition);
-
-					UE_LOG(LogWeapon, Log, TEXT("After emitter attach"));
+					ClientFireMuzzleEffect(WeaponData.MuzzleName, WeaponData.MuzzleSound, 
+						WeaponData.MuzzleFlash, GetOwnerCharacter());
 				}
 			}
 
@@ -145,9 +158,9 @@ void AWeaponBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME_CONDITION(AWeaponBase, OwnerCharacter, COND_OwnerOnly);
-	DOREPLIFETIME_CONDITION(AWeaponBase, CurrentAmmo, COND_SimulatedOnly);
-	DOREPLIFETIME_CONDITION(AWeaponBase, TotalLeftAmmo, COND_SimulatedOnly);
+	DOREPLIFETIME(AWeaponBase, OwnerCharacter);
+	DOREPLIFETIME(AWeaponBase, CurrentAmmo);
+	DOREPLIFETIME(AWeaponBase, TotalLeftAmmo);
 }
 
 void AWeaponBase::InitializeWeaponData()
@@ -232,6 +245,18 @@ void AWeaponBase::ClientFireEffect_Implementation(bool IsHit, const FHitResult& 
 	{
 		// Impact effect
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), WeaponData.ImpactFlash, FTransform(HitInfo.Location));
+		// Impact sound
+		UGameplayStatics::PlaySound2D(GetWorld(), WeaponData.ImpactSound);
+
+		// Hit React
+		if (ACharacterBase* HitCharacter = Cast<ACharacterBase>(HitInfo.Actor))
+		{
+			if (HitCharacter->GetHitReactAnim())
+			{
+				// TODO: 这里应该不能直接播放动画，而应该通过数据通知人物动画蓝图进行动作混合
+				HitCharacter->GetMesh()->PlayAnimation(HitCharacter->GetHitReactAnim(), false);
+			}
+		}
 	}
 	
 	if (IsValid(GetOwnerCharacter()))

@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "CharacterBase.h"
@@ -11,6 +11,10 @@
 #include "UEGameTrainingRoom/Weapons/WeaponBase.h"
 #include "Net/UnrealNetwork.h"
 #include "Math/UnrealMathUtility.h"
+#include "Components/ArrowComponent.h"
+#include "Components/WidgetComponent.h"
+#include "PlayerHeadUpUI.h"
+#include "Blueprint/UserWidget.h"
 
 DEFINE_LOG_CATEGORY(LogCharacter);
 
@@ -26,7 +30,7 @@ ACharacterBase::ACharacterBase()
 	BaseLookUpRate = 45.f;
 
 	bUseControllerRotationPitch = false;
-	bUseControllerRotationYaw = true;
+	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
 
 	GetCharacterMovement()->bOrientRotationToMovement = true; // (Without a weapon)
@@ -42,6 +46,22 @@ ACharacterBase::ACharacterBase()
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom);
 	FollowCamera->bUsePawnControlRotation = false;
+	
+	if (IsValid(PrimaryWeapon))
+	{	
+		FollowCamera->SetFieldOfView(PrimaryWeapon->GetWeaponModelData().DefaultFOV);
+	}
+
+	// Setting of HeadUp UI
+	HeadUpWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("HeadUpWidget"));
+	HeadUpWidget->SetupAttachment(GetMesh(), FName(TEXT("UI_Head")));	
+}
+
+void ACharacterBase::PossessedBy(class AController* InController)
+{
+	Super::PossessedBy(InController);
+
+	ClientHideHeadUpUI();
 }
 
 void ACharacterBase::InitializeWeapon()
@@ -77,10 +97,33 @@ void ACharacterBase::InitializeWeapon()
 void ACharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
-
-	
+		
 	OnHealthChangedDelegator.Broadcast(Health, MaxHealth);
 	OnArmorChangedDelegator.Broadcast(Armor, MaxArmor);
+
+	// 初始化头顶UI的委托
+	if (GetLocalRole() < ROLE_Authority)
+	{
+		if (HeadUpWidget && HeadUpWidget->GetUserWidgetObject())
+		{
+			if (UPlayerHeadUpUI* HeadUpUIInst = Cast<UPlayerHeadUpUI>(HeadUpWidget->GetUserWidgetObject()))
+			{
+				HeadUpUIInst->InitializeModelDelegates(this);
+			}
+		}
+	}
+
+	if (GetLocalRole() == ROLE_Authority)
+	{
+		GetWorldTimerManager().SetTimer(TimerHandle_SetPrepareForBattle, 
+			this, &ACharacterBase::SetPreparedForBattle, 5.f, false);
+	}
+}
+
+void ACharacterBase::SetPreparedForBattle()
+{
+	bIsPreparedForBattle = true;
+	GetWorldTimerManager().ClearTimer(TimerHandle_SetPrepareForBattle);
 }
 
 void ACharacterBase::InitializeAttributes()
@@ -90,7 +133,17 @@ void ACharacterBase::InitializeAttributes()
 	bIsAiming = false;
 	bIsFiring = false;
 	bIsPreparingFire = false;
+	bIsPreparedForBattle = false;
+	bWantsToAim = false;
 	WalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
+
+	if (HeadUpUIClass)
+	{
+		HeadUpWidget->SetWidgetClass(HeadUpUIClass);
+		HeadUpWidget->SetWidgetSpace(EWidgetSpace::Screen);
+		HeadUpWidget->SetDrawSize(FVector2D(150.f, 20.f));
+		HeadUpWidget->SetVisibility(true, true);
+	}
 
 
 	UE_LOG(LogCharacter, Log, TEXT("After init, health: %f, armor: %f"), Health, Armor);
@@ -100,7 +153,7 @@ void ACharacterBase::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 
-	if (GetLocalRole() == ROLE_Authority) 
+	if (GetLocalRole() == ROLE_Authority)
 	{
 		InitializeAttributes();
 
@@ -112,6 +165,19 @@ void ACharacterBase::PostInitializeComponents()
 void ACharacterBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	if (GetLocalRole() < ROLE_Authority)
+	{
+		if (IsValid(PrimaryWeapon))
+		{
+			float TargetFOV = bWantsToAim ? PrimaryWeapon->GetWeaponModelData().AimingFOV 
+				: PrimaryWeapon->GetWeaponModelData().DefaultFOV;
+			float InterpFOV = FMath::FInterpTo(GetFollowCamera()->FieldOfView, TargetFOV,
+				DeltaTime, PrimaryWeapon->GetWeaponModelData().AimingSpeed);
+
+			GetFollowCamera()->SetFieldOfView(InterpFOV);
+		}
+	}
 }
 
 // Called to bind functionality to input
@@ -212,6 +278,12 @@ void ACharacterBase::LookUpAtRate(float Rate)
 
 bool ACharacterBase::CanFire()
 {
+	if (bIsPreparedForBattle == false)
+	{
+		UE_LOG(LogCharacter, Warning, TEXT("Not prepared for battle"));
+		return false;
+	}
+
 	if (bIsFiring)
 	{
 		UE_LOG(LogWeapon, Log, TEXT("Current character is firing"));
@@ -229,16 +301,34 @@ bool ACharacterBase::CanFire()
 
 bool ACharacterBase::CanReload()
 {
+	if (bIsPreparedForBattle == false)
+	{
+		return false;
+	}
+
 	return true;
 }
 
 void ACharacterBase::SwitchToAiming()
 {
+	if (bIsPreparedForBattle == false)
+	{
+		UE_LOG(LogCharacter, Warning, TEXT("Not prepared for battle"));
+		return;
+	}
+
 	if (GetLocalRole() < ROLE_Authority)
 	{
 		ServerSwitchToAiming();
 	}
 
+	if (IsValid(PrimaryWeapon) == false)
+	{
+		UE_LOG(LogCharacter, Warning, TEXT("PrimaryWeapon is not valid"));
+		return;
+	}
+		
+	bWantsToAim = true;			
 	bIsPreparingFire = true;
 	bUseControllerRotationYaw = true;
 	if (GetCharacterMovement() != nullptr)
@@ -251,11 +341,24 @@ void ACharacterBase::SwitchToAiming()
 
 void ACharacterBase::RecoveryFromAiming()
 {
+	if (bIsPreparedForBattle == false)
+	{
+		UE_LOG(LogCharacter, Warning, TEXT("Not prepared for battle"));
+		return;
+	}
+
 	if (GetLocalRole() < ROLE_Authority)
 	{
 		ServerRecoveryFromAiming();
 	}
 
+	if (IsValid(PrimaryWeapon) == false)
+	{
+		UE_LOG(LogCharacter, Warning, TEXT("PrimaryWeapon is not valid"));
+		return;
+	}
+		
+	bWantsToAim = false;
 	bIsPreparingFire = false;
 	bUseControllerRotationYaw = false;
 	if (GetCharacterMovement() != nullptr)
@@ -296,6 +399,9 @@ void ACharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(ACharacterBase, PrimaryWeapon);
 	DOREPLIFETIME(ACharacterBase, WalkSpeed);
 	DOREPLIFETIME(ACharacterBase, bIsDead);
+	DOREPLIFETIME(ACharacterBase, bIsPreparingFire);	
+	DOREPLIFETIME(ACharacterBase, bWantsToAim);
+	DOREPLIFETIME(ACharacterBase, bIsPreparedForBattle);
 }
 
 bool ACharacterBase::ServerModifyMoveSpeed_Validate(float NewSpeed)
@@ -339,6 +445,28 @@ bool ACharacterBase::ServerRecoveryFromAiming_Validate()
 void ACharacterBase::ServerRecoveryFromAiming_Implementation()
 {
 	RecoveryFromAiming();
+}
+
+void ACharacterBase::ClientHideHeadUpUI_Implementation()
+{
+	if (GetController()->IsLocalPlayerController())
+	{
+		HeadUpWidget->SetVisibility(false, true);
+		UE_LOG(LogCharacter, Log, TEXT("After hide head up ui"));
+	}
+	
+	/*
+	if (GetLocalRole() == ROLE_AutonomousProxy)
+	{
+		HeadUpWidget->SetVisibility(false, true);
+		UE_LOG(LogCharacter, Log, TEXT("After hide head up ui"));
+	}
+	else
+	{
+		HeadUpWidget->SetVisibility(true, true);
+		UE_LOG(LogCharacter, Log, TEXT("After display head up ui"));
+	}
+	*/
 }
 
 void ACharacterBase::TakeHurt(const AWeaponBase* SourceWeapon, float Distance)

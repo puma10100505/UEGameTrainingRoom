@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "CoreMinimal.h"
 
@@ -42,4 +42,16 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	class TSubclassOf<AActor> GunTrail;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	class USoundBase* ImpactSound;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	float AimingFOV;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	float DefaultFOV;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	float AimingSpeed;
 };

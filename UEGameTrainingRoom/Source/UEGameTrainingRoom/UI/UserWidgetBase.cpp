@@ -7,7 +7,7 @@ DEFINE_LOG_CATEGORY(LogUI);
 
 float UUserWidgetBase::CalcPercent(float NewVal, float MaxVal)
 {
-    if (MaxVal <= 0.0001f)
+    if (MaxVal <= 0.1f)
     {
         return 0.f;
     }

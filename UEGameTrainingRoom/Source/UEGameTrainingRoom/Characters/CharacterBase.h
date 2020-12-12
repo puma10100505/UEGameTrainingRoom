@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -25,6 +25,8 @@ class UEGAMETRAININGROOM_API ACharacterBase : public ACharacter, public IHurtabl
 public:
 	// Sets default values for this character's properties
 	ACharacterBase();
+
+	virtual void PossessedBy(class AController* InController) override;
 
 protected:
 	// Called when the game starts or when spawned
@@ -61,6 +63,8 @@ public:
 	FORCEINLINE FCharacterHealthChanged& GetHealthChangedDelegator() { return OnHealthChangedDelegator; }
 	FORCEINLINE FCharacterArmorChanged& GetArmorChangedDelegator() { return OnArmorChangedDelegator; }
 
+	FORCEINLINE class UAnimationAsset* GetHitReactAnim() const { return HitReactAnim; }
+
 protected:
 	void MoveForward(float Value);
 	void MoveRight(float Value);
@@ -91,6 +95,8 @@ protected:
 	UFUNCTION()
 	void OnRep_ArmorChanged(float OldArmor);
 
+	void SetPreparedForBattle();
+
 protected: // RPC
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerModifyMoveSpeed(float NewSpeed);
@@ -111,6 +117,10 @@ protected: // RPC
 	void ServerRecoveryFromAiming();
 	bool ServerRecoveryFromAiming_Validate();
 	void ServerRecoveryFromAiming_Implementation();
+
+	UFUNCTION(Client, Unreliable)
+	void ClientHideHeadUpUI();
+	void ClientHideHeadUpUI_Implementation();
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
@@ -160,6 +170,12 @@ protected:
 	UPROPERTY(BlueprintReadWrite, Replicated, Category = Attributes)
 	uint8 bIsDead : 1;
 
+	UPROPERTY(BlueprintReadWrite, Replicated, Category = Attributes)
+	uint8 bWantsToAim : 1;
+
+	UPROPERTY(BlueprintReadWrite, Replicated, Category = Attributes)
+	uint8 bIsPreparedForBattle : 1;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = CharacterAnim)
 	class UAnimMontage* AimMontage;
 
@@ -173,6 +189,16 @@ protected:
 	UPROPERTY(BlueprintAssignable, Category = EventDispachers)
 	FCharacterArmorChanged OnArmorChangedDelegator;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Components)
+	class UWidgetComponent* HeadUpWidget;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = UISettings)
+	TSubclassOf<class UUserWidget> HeadUpUIClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Animations)
+	class UAnimationAsset* HitReactAnim;
+
 private:
 	FTimerHandle TimerHandle_Fire;
+	FTimerHandle TimerHandle_SetPrepareForBattle;
 };
