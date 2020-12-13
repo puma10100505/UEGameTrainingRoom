@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "CharacterBase.h"
@@ -526,6 +526,7 @@ void ACharacterBase::KillToDeath()
 	bIsDead = true;
 	UE_LOG(LogCharacter, Log, TEXT("Character is killed to death"));
 
+	AfterCharacterDeath();
 }
 
 void ACharacterBase::OnRep_HealthChanged(float OldHealth)
@@ -542,4 +543,9 @@ void ACharacterBase::OnRep_ArmorChanged(float OldArmor)
 	{
 		OnArmorChangedDelegator.Broadcast(Armor, MaxArmor);
 	}
+}
+
+void ACharacterBase::AfterCharacterDeath_Implementation()
+{
+
 }

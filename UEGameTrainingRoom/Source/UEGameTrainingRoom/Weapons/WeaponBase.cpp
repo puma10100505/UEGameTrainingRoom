@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "WeaponBase.h"
@@ -68,15 +68,6 @@ void AWeaponBase::Fire()
 		{
 			UE_LOG(LogWeapon, Log, TEXT("Before invoke fire server rpc"));
 
-			if (GetNetMode() == ENetMode::NM_Client)
-			{
-				if (IsValid(GetOwnerCharacter()))
-				{
-					ClientFireMuzzleEffect(WeaponData.MuzzleName, WeaponData.MuzzleSound, 
-						WeaponData.MuzzleFlash, GetOwnerCharacter());
-				}
-			}
-
 			// Client
 			ServerFire();
 		}
@@ -108,6 +99,12 @@ void AWeaponBase::FireProcess()
 	if (GetLocalRole() == ROLE_Authority)
 	{
 		ClientFireEffect(IsHit, HitInfo);
+
+		if (IsValid(GetOwnerCharacter()))
+		{
+			ClientFireMuzzleEffect(WeaponData.MuzzleName, WeaponData.MuzzleSound, 
+				WeaponData.MuzzleFlash, GetOwnerCharacter());
+		}
 	}
 }
 

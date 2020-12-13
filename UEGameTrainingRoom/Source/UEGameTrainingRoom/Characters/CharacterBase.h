@@ -82,6 +82,10 @@ protected:
 
 	virtual void KillToDeath();
 
+	UFUNCTION(BlueprintNativeEvent)
+	void AfterCharacterDeath();
+	virtual void AfterCharacterDeath_Implementation();
+
 	UFUNCTION()
 	void OnRep_PrimaryWeapon(class AWeaponBase* LastWeapon);
 
