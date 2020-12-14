@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "CharacterBase.h"
@@ -12,9 +12,11 @@
 #include "Net/UnrealNetwork.h"
 #include "Math/UnrealMathUtility.h"
 #include "Components/ArrowComponent.h"
+#include "BrainComponent.h"
 #include "Components/WidgetComponent.h"
 #include "PlayerHeadUpUI.h"
 #include "Blueprint/UserWidget.h"
+#include "AIControllerBase.h"
 
 DEFINE_LOG_CATEGORY(LogCharacter);
 
@@ -37,6 +39,8 @@ ACharacterBase::ACharacterBase()
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 540.f, 0.f);
 	GetCharacterMovement()->JumpZVelocity = 600.f;
 	GetCharacterMovement()->AirControl = 0.2f;
+
+	//GetMesh()->SetCollisionObjectType(ECC_WorldDynamic)
 
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
@@ -547,5 +551,15 @@ void ACharacterBase::OnRep_ArmorChanged(float OldArmor)
 
 void ACharacterBase::AfterCharacterDeath_Implementation()
 {
+	if (AAIControllerBase* AIC = Cast<AAIControllerBase>(GetController()))
+	{
+		UBrainComponent* AIBrain = AIC->GetBrainComponent();
+		if (AIBrain == nullptr)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Not found brain component"));
+			return;
+		}
 
+		AIBrain->StopLogic(TEXT("Character Death"));
+	}
 }
