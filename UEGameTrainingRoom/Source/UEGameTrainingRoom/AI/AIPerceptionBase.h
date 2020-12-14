@@ -12,7 +12,7 @@
 /**
  * 
  */
-UCLASS(ClassGroup=AI, HideCategories=(Activation, Collision), meta=(BlueprintSpawnableComponent))
+UCLASS(Blueprintable, ClassGroup=AI, HideCategories=(Activation, Collision), meta=(BlueprintSpawnableComponent))
 class UEGAMETRAININGROOM_API UAIPerceptionBase : public UAIPerceptionComponent
 {
 	GENERATED_BODY()
