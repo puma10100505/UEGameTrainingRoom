@@ -544,6 +544,11 @@ void ACharacterBase::AIStopAttack()
 	OnStopFire();
 }
 
+bool ACharacterBase::IsAI() const
+{
+	return Cast<AAIControllerBase>(GetController()) != nullptr;
+}
+
 void ACharacterBase::KillToDeath()
 {
 	bIsDead = true;

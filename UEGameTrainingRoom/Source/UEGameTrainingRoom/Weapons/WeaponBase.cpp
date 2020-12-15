@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "WeaponBase.h"
@@ -144,7 +144,14 @@ bool AWeaponBase::WeaponLineTrace_Single(FHitResult& HitInfo)
 	FVector FireDirection = GetOwnerCharacter()->GetFollowCamera()->GetForwardVector();
 	FVector EndPos = StartPos + FireDirection * WeaponData.ShootRange;
 
+	TArray<AActor*> IgnoreActors;
+	if (IsValid(GetOwnerCharacter()))
+	{
+		IgnoreActors.Add(GetOwnerCharacter());
+	}
+
 	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActors(IgnoreActors);
 	QueryParams.bReturnPhysicalMaterial = true;
 	bool bIsHit = GetWorld()->LineTraceSingleByChannel(HitInfo, StartPos, EndPos, ECC_Pawn, QueryParams);
 

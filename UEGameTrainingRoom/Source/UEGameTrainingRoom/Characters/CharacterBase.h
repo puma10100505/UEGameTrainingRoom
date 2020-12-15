@@ -57,12 +57,9 @@ public:
 	virtual void ChangeLife(float Value) override;
 
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
-
 	FORCEINLINE class AWeaponBase* GetCurrentWeapon() const { return PrimaryWeapon; }
-	
 	FORCEINLINE FCharacterHealthChanged& GetHealthChangedDelegator() { return OnHealthChangedDelegator; }
 	FORCEINLINE FCharacterArmorChanged& GetArmorChangedDelegator() { return OnArmorChangedDelegator; }
-
 	FORCEINLINE class UAnimationAsset* GetHitReactAnim() const { return HitReactAnim; }
 
 	// TODO
@@ -74,6 +71,12 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void AIStopAttack();
+
+	UFUNCTION(BlueprintCallable)
+	bool IsAI() const;
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE bool IsAlive() const { return !bIsDead; }
 
 protected:
 	void MoveForward(float Value);
