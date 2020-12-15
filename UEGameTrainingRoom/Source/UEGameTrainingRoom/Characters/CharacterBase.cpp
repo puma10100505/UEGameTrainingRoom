@@ -332,7 +332,7 @@ void ACharacterBase::SwitchToAiming()
 		return;
 	}
 		
-	bWantsToAim = true;			
+	bWantsToAim = true;
 	bIsPreparingFire = true;
 	bUseControllerRotationYaw = true;
 	if (GetCharacterMovement() != nullptr)
@@ -523,6 +523,25 @@ void ACharacterBase::ChangeLife(float Value)
 	
 	UE_LOG(LogCharacter, Log, TEXT("OldArmor: %f, CurrArmor: %f, OldHealth: %f, CurrHealth: %f"), 
 		OldArmor, Armor, OldHealth, Health);
+}
+
+void ACharacterBase::FaceToTarget(const FVector& TargetLocation)
+{
+
+}
+
+void ACharacterBase::AIAttack()
+{
+	SwitchToAiming();
+
+	OnStartFire();
+}
+
+void ACharacterBase::AIStopAttack()
+{
+	RecoveryFromAiming();
+
+	OnStopFire();
 }
 
 void ACharacterBase::KillToDeath()

@@ -65,6 +65,16 @@ public:
 
 	FORCEINLINE class UAnimationAsset* GetHitReactAnim() const { return HitReactAnim; }
 
+	// TODO
+	UFUNCTION(BlueprintCallable)
+	void FaceToTarget(const FVector& TargetLocation);
+
+	UFUNCTION(BlueprintCallable)
+	void AIAttack();
+
+	UFUNCTION(BlueprintCallable)
+	void AIStopAttack();
+
 protected:
 	void MoveForward(float Value);
 	void MoveRight(float Value);
