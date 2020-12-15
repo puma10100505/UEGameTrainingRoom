@@ -17,6 +17,8 @@ class UEGAMETRAININGROOM_API AAIControllerBase : public AAIController
 	GENERATED_BODY()
 
 public:
+	AAIControllerBase(const FObjectInitializer& ObjectInitializer);
+
 	ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const override;
 
 	virtual void BeginPlay() override;
@@ -24,4 +26,7 @@ public:
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	FGenericTeamId AITeamId;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Components)
+	class UAIPerceptionBase* AIPerceptionComp;
 };

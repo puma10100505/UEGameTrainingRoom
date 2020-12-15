@@ -19,6 +19,7 @@ class UEGAMETRAININGROOM_API UAIPerceptionBase : public UAIPerceptionComponent
 	
 public:
 	virtual void OnRegister() override;
+	virtual void BeginPlay() override;
 
 protected:
 	void TargetPerceptionUpdated(class AActor* Actor, FAIStimulus Stimulus);

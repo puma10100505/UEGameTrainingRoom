@@ -3,6 +3,14 @@
 
 #include "AIControllerBase.h"
 #include "GameFramework/Pawn.h"
+#include "AIPerceptionBase.h"
+
+AAIControllerBase::AAIControllerBase(const FObjectInitializer& ObjectInitializer)
+    : Super(ObjectInitializer)
+{
+    AIPerceptionComp = CreateDefaultSubobject<UAIPerceptionBase>(TEXT("AIPerception"));
+}
+
 
 void AAIControllerBase::BeginPlay()
 {

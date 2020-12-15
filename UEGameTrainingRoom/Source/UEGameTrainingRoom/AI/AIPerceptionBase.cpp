@@ -12,10 +12,14 @@
 void UAIPerceptionBase::OnRegister()
 {
     Super::OnRegister();
+}
+
+void UAIPerceptionBase::BeginPlay()
+{
+    Super::BeginPlay();
 
     OnTargetPerceptionUpdated.AddDynamic(this, &UAIPerceptionBase::TargetPerceptionUpdated);
 }
-
 
 void UAIPerceptionBase::TargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
