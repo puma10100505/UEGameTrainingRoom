@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -19,7 +19,13 @@ class UEGAMETRAININGROOM_API APlayerControllerBase
 
 public:
 	virtual void BeginPlay() override;
+
 	virtual void OnPossess(APawn* aPawn) override;
+
+// 	FORCEINLINE class UPlayerMainUI* GetPlayerMainUI() 
+// 	{
+// 		return Cast<class UPlayerMainUI>(MainUI);
+// 	}
 
 protected:
 	FORCEINLINE FGenericTeamId GetGenericTeamId() const { return TeamId; }
@@ -30,6 +36,12 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = CharacterUI)
 	TSubclassOf<class UUserWidgetBase> CrosshairClass;
+
+	UPROPERTY(BlueprintReadWrite, Category = CharacterUI)
+	class UUserWidgetBase* MainUI;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = CharacterUI)
+	TSubclassOf<class UUserWidgetBase> MainUIClass;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	FGenericTeamId TeamId;

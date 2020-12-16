@@ -18,7 +18,8 @@ public class UEGameTrainingRoom : ModuleRules
 			"UEGameTrainingRoom/UI",
 			"UEGameTrainingRoom/Controllers",
 			"UEGameTrainingRoom/Shared",
-			"UEGameTrainingRoom/AI"
+			"UEGameTrainingRoom/AI",
+			"UEGameTrainingRoom/Components"
 		});
 	}
 }

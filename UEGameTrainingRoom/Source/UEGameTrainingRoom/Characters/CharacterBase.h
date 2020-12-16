@@ -78,6 +78,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE bool IsAlive() const { return !bIsDead; }
 
+	UFUNCTION(BlueprintCallable)
+	void LaunchRocket();
+
 protected:
 	void MoveForward(float Value);
 	void MoveRight(float Value);
@@ -208,6 +211,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Components)
 	class UWidgetComponent* HeadUpWidget;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Components)
+	class UAbilityComponent* AbilityComp;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = UISettings)
 	TSubclassOf<class UUserWidget> HeadUpUIClass;

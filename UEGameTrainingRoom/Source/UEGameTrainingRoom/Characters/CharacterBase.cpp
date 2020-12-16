@@ -17,6 +17,7 @@
 #include "PlayerHeadUpUI.h"
 #include "Blueprint/UserWidget.h"
 #include "AIControllerBase.h"
+#include "AbilityComponent.h"
 
 DEFINE_LOG_CATEGORY(LogCharacter);
 
@@ -58,7 +59,10 @@ ACharacterBase::ACharacterBase()
 
 	// Setting of HeadUp UI
 	HeadUpWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("HeadUpWidget"));
-	HeadUpWidget->SetupAttachment(GetMesh(), FName(TEXT("UI_Head")));	
+	HeadUpWidget->SetupAttachment(GetMesh(), FName(TEXT("UI_Head")));
+
+	AbilityComp = CreateDefaultSubobject<UAbilityComponent>(TEXT("Ability"));
+	
 }
 
 void ACharacterBase::PossessedBy(class AController* InController)
@@ -203,6 +207,7 @@ void ACharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	PlayerInputComponent->BindAction("Fire", IE_Released, this, &ACharacterBase::OnStopFire);
 	PlayerInputComponent->BindAction("Aim", IE_Pressed, this, &ACharacterBase::SwitchToAiming);
 	PlayerInputComponent->BindAction("Aim", IE_Released, this, &ACharacterBase::RecoveryFromAiming);
+	PlayerInputComponent->BindAction("AbilityRocket", IE_Pressed, this, &ACharacterBase::LaunchRocket);
 
 }
 
@@ -547,6 +552,11 @@ void ACharacterBase::AIStopAttack()
 bool ACharacterBase::IsAI() const
 {
 	return Cast<AAIControllerBase>(GetController()) != nullptr;
+}
+
+void ACharacterBase::LaunchRocket()
+{
+
 }
 
 void ACharacterBase::KillToDeath()
