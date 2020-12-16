@@ -19,9 +19,7 @@ class UEGAMETRAININGROOM_API APlayerControllerBase
 
 public:
 	virtual void BeginPlay() override;
-
 	virtual void OnPossess(APawn* aPawn) override;
-
 
 protected:
 	FORCEINLINE FGenericTeamId GetGenericTeamId() const { return TeamId; }
