@@ -21,3 +21,4 @@ UEGameTrainingRoom/Config/DefaultEngine.ini
 SciFiWeapDark
 UEGameTrainingRoom/UEGameTrainingRoom.code-workspace
 AnimResources
+*.ddc

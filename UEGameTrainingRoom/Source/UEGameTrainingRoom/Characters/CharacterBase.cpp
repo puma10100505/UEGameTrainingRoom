@@ -18,6 +18,7 @@
 #include "Blueprint/UserWidget.h"
 #include "AIControllerBase.h"
 #include "AbilityComponent.h"
+#include "States/PlayerStateBase.h"
 
 DEFINE_LOG_CATEGORY(LogCharacter);
 
@@ -105,10 +106,7 @@ void ACharacterBase::InitializeWeapon()
 void ACharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
-		
-	OnHealthChangedDelegator.Broadcast(Health, MaxHealth);
-	OnArmorChangedDelegator.Broadcast(Armor, MaxArmor);
-
+	
 	// 初始化头顶UI的委托
 	if (GetLocalRole() < ROLE_Authority)
 	{
@@ -126,6 +124,9 @@ void ACharacterBase::BeginPlay()
 		GetWorldTimerManager().SetTimer(TimerHandle_SetPrepareForBattle, 
 			this, &ACharacterBase::SetPreparedForBattle, 5.f, false);
 	}
+
+	OnHealthChangedDelegator.Broadcast(Health, MaxHealth);
+	OnArmorChangedDelegator.Broadcast(Armor, MaxArmor);
 }
 
 void ACharacterBase::SetPreparedForBattle()
@@ -595,5 +596,41 @@ void ACharacterBase::AfterCharacterDeath_Implementation()
 		}
 
 		AIBrain->StopLogic(TEXT("Character Death"));
+	}
+}
+
+UAbilitySystemComponent* ACharacterBase::GetAbilitySystemComponent() const
+{
+	if (APlayerStateBase* PS = GetPlayerState<APlayerStateBase>())
+	{
+		return PS->GetAbilitySystemComponent();
+	}
+	else 
+	{
+		return nullptr;
+	}
+}
+
+UAttributeSetHealth* ACharacterBase::GetAttributeSetHealth() const
+{
+	if (APlayerStateBase* PS = GetPlayerState<APlayerStateBase>())
+	{
+		return PS->GetAttributeSetHealth();
+	}
+	else 
+	{
+		return nullptr;
+	}
+}
+
+UAttributeSetArmor* ACharacterBase::GetAttributeSetArmor() const
+{
+	if (APlayerStateBase* PS = GetPlayerState<APlayerStateBase>())
+	{
+		return PS->GetAttributeSetArmor();
+	}
+	else 
+	{
+		return nullptr;
 	}
 }

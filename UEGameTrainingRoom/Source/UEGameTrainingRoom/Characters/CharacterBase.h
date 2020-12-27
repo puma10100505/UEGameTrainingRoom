@@ -6,6 +6,9 @@
 #include "GameFramework/Character.h"
 #include "Engine/EngineTypes.h"
 #include "TimerManager.h"
+#include "GameFramework/PlayerState.h"
+#include "AbilitySystemInterface.h"
+#include "GameplayEffectTypes.h"
 #include "HurtableInterface.h"
 #include "LifeInterface.h"
 
@@ -18,7 +21,10 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FCharacterHealthChanged, float, New
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FCharacterArmorChanged, float, NewArmor, float, MaxArmor);
 
 UCLASS()
-class UEGAMETRAININGROOM_API ACharacterBase : public ACharacter, public IHurtable, public ILife
+class UEGAMETRAININGROOM_API ACharacterBase : 
+	public ACharacter, 
+	public IHurtable, public ILife, 
+	public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
@@ -80,6 +86,12 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void LaunchRocket();
+
+	virtual class UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+
+	virtual class UAttributeSetHealth* GetAttributeSetHealth() const;
+
+	virtual class UAttributeSetArmor* GetAttributeSetArmor() const;
 
 protected:
 	void MoveForward(float Value);
