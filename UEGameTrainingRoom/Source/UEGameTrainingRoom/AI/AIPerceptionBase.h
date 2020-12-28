@@ -22,6 +22,7 @@ public:
 	virtual void BeginPlay() override;
 
 protected:
+	UFUNCTION()
 	void TargetPerceptionUpdated(class AActor* Actor, FAIStimulus Stimulus);
 
 protected:

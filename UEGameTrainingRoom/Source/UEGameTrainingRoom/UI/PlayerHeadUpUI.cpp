@@ -48,6 +48,13 @@ void UPlayerHeadUpUI::InitializeModelDelegates(ACharacterBase* OwnerCharacter)
         return;
     }
 
-    OwnerCharacter->GetHealthChangedDelegator().AddDynamic(this, &UPlayerHeadUpUI::OnHealthChanged);
-    OwnerCharacter->GetArmorChangedDelegator().AddDynamic(this, &UPlayerHeadUpUI::OnArmorChanged);
+    if (OwnerCharacter->GetHealthChangedDelegator().IsBound() == false)
+    {
+        OwnerCharacter->GetHealthChangedDelegator().AddDynamic(this, &UPlayerHeadUpUI::OnHealthChanged);
+    }
+
+    if (OwnerCharacter->GetArmorChangedDelegator().IsBound() == false)
+    {
+        OwnerCharacter->GetArmorChangedDelegator().AddDynamic(this, &UPlayerHeadUpUI::OnArmorChanged);
+    }
 }
