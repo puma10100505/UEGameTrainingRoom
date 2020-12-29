@@ -2,13 +2,21 @@
 
 
 #include "PlayerStateBase.h"
+#include "AbilitySystemComponent.h"
 #include "Attributes/AttributeSetArmor.h"
 #include "Attributes/AttributeSetHealth.h"
 
 
 APlayerStateBase::APlayerStateBase()
 {
-    // TODO: 初始化属性集和ASC
+    AbilitySystem = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("ASC"));
+    AbilitySystem->SetIsReplicated(true);
+    AbilitySystem->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
+
+    AttributeSetHealth = CreateDefaultSubobject<UAttributeSetHealth>(TEXT("AttributeSetHealth"));
+    AttributeSetArmor = CreateDefaultSubobject<UAttributeSetArmor>(TEXT("AttributeSetArmor"));
+
+    NetUpdateFrequency = 100.f;
 }
 
 UAbilitySystemComponent* APlayerStateBase::GetAbilitySystemComponent() const

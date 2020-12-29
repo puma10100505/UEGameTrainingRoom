@@ -27,10 +27,13 @@ public:
 	class UAttributeSetArmor* GetAttributeSetArmor() const ;
 
 protected:
+	UPROPERTY()
 	class UAbilitySystemComponent* AbilitySystem;
 
+	UPROPERTY()
 	class UAttributeSetHealth* AttributeSetHealth;
 
+	UPROPERTY()
 	class UAttributeSetArmor* AttributeSetArmor;
 
 };

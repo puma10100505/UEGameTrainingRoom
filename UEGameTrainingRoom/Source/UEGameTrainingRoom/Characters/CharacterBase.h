@@ -129,6 +129,9 @@ protected:
 
 	void SetPreparedForBattle();
 
+private:
+	void InitializeASCFromPlayerState();
+
 protected: // RPC
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerModifyMoveSpeed(float NewSpeed);
@@ -232,6 +235,18 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Animations)
 	class UAnimationAsset* HitReactAnim;
+
+	UPROPERTY(Transient, BlueprintReadWrite)
+	class UAbilitySystemComponent* AbilitySystem;
+
+	UPROPERTY(Transient, BlueprintReadWrite, Replicated)
+	class UAttributeSetHealth* AttributeSetHealth;
+
+	UPROPERTY(Transient, BlueprintReadWrite, Replicated)
+	class UAttributeSetArmor* AttributeSetArmor;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ASC|Attributes")
+	TSubclassOf<class UGameplayEffect> DefaultAttributes;
 
 private:
 	FTimerHandle TimerHandle_Fire;

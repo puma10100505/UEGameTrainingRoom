@@ -17,8 +17,9 @@
 #include "PlayerHeadUpUI.h"
 #include "Blueprint/UserWidget.h"
 #include "AIControllerBase.h"
+#include "PlayerStateBase.h"
 #include "AbilityComponent.h"
-#include "States/PlayerStateBase.h"
+#include "AbilitySystemComponent.h"
 
 DEFINE_LOG_CATEGORY(LogCharacter);
 
@@ -66,9 +67,37 @@ ACharacterBase::ACharacterBase()
 	
 }
 
+void ACharacterBase::InitializeASCFromPlayerState()
+{
+	APlayerStateBase* PS = GetPlayerState<APlayerStateBase>();
+	if (PS)
+	{
+		AbilitySystem = PS->GetAbilitySystemComponent();
+
+		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS, this);
+
+		AttributeSetHealth = PS->GetAttributeSetHealth();
+
+		AttributeSetArmor = PS->GetAttributeSetArmor();
+
+		if (DefaultAttributes)
+		{
+			FGameplayEffectContextHandle EffectContext = AbilitySystem->MakeEffectContext();
+			EffectContext.AddSourceObject(this);
+			FGameplayEffectSpecHandle NewHandle = AbilitySystem->MakeOutgoingSpec(DefaultAttributes, 1.f, EffectContext);
+			if (NewHandle.IsValid())
+			{
+				FActiveGameplayEffectHandle ActiveGEHandle = AbilitySystem->ApplyGameplayEffectSpecToSelf(*NewHandle.Data.Get());
+			}
+		}
+	}
+}
+
 void ACharacterBase::PossessedBy(class AController* InController)
 {
 	Super::PossessedBy(InController);
+
+	InitializeASCFromPlayerState();
 
 	ClientHideHeadUpUI();
 }
@@ -412,6 +441,8 @@ void ACharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(ACharacterBase, bIsPreparingFire);	
 	DOREPLIFETIME(ACharacterBase, bWantsToAim);
 	DOREPLIFETIME(ACharacterBase, bIsPreparedForBattle);
+	DOREPLIFETIME(ACharacterBase, AttributeSetHealth);
+	DOREPLIFETIME(ACharacterBase, AttributeSetArmor);
 }
 
 bool ACharacterBase::ServerModifyMoveSpeed_Validate(float NewSpeed)
@@ -601,36 +632,15 @@ void ACharacterBase::AfterCharacterDeath_Implementation()
 
 UAbilitySystemComponent* ACharacterBase::GetAbilitySystemComponent() const
 {
-	if (APlayerStateBase* PS = GetPlayerState<APlayerStateBase>())
-	{
-		return PS->GetAbilitySystemComponent();
-	}
-	else 
-	{
-		return nullptr;
-	}
+	return AbilitySystem;
 }
 
 UAttributeSetHealth* ACharacterBase::GetAttributeSetHealth() const
 {
-	if (APlayerStateBase* PS = GetPlayerState<APlayerStateBase>())
-	{
-		return PS->GetAttributeSetHealth();
-	}
-	else 
-	{
-		return nullptr;
-	}
+	return AttributeSetHealth;
 }
 
 UAttributeSetArmor* ACharacterBase::GetAttributeSetArmor() const
 {
-	if (APlayerStateBase* PS = GetPlayerState<APlayerStateBase>())
-	{
-		return PS->GetAttributeSetArmor();
-	}
-	else 
-	{
-		return nullptr;
-	}
+	return AttributeSetArmor;
 }
