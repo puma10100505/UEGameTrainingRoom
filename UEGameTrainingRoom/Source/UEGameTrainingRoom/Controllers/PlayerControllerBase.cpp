@@ -23,18 +23,28 @@ void APlayerControllerBase::BeginPlay()
 			}
 		}
 
-		if (MainUIClass != nullptr)
-		{
-			MainUI = CreateWidget<UUserWidgetBase>(this, MainUIClass);
-			if (IsValid(MainUI))
-			{
-				MainUI->AddToViewport();
-			}
-		}
+		// if (MainUIClass != nullptr)
+		// {
+		// 	MainUI = CreateWidget<UUserWidgetBase>(this, MainUIClass);
+		// 	if (IsValid(MainUI))
+		// 	{
+		// 		MainUI->AddToViewport();
+		// 	}
+		// }
 	}
 }
 
 void APlayerControllerBase::OnPossess(APawn* aPawn)
 {
 	Super::OnPossess(aPawn);
+}
+
+void APlayerControllerBase::CreateMainUI()
+{
+	// TODO: 创建玩家主UI界面
+}
+
+void APlayerControllerBase::CreateHeadUpUI()
+{
+	// TODO: 创建人物头顶UI信息条，只对当前控制玩家以外的人物对象创建
 }

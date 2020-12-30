@@ -20,11 +20,15 @@ class UEGAMETRAININGROOM_API APlayerStateBase : public APlayerState,
 public:
 	APlayerStateBase();
 
+	virtual void BeginPlay() override;
+
 	virtual class UAbilitySystemComponent* GetAbilitySystemComponent() const;
 
 	class UAttributeSetHealth* GetAttributeSetHealth() const ;
 
 	class UAttributeSetArmor* GetAttributeSetArmor() const ;
+
+	class UAttributeSetWeapon* GetAttributeSetWeapon() const ;
 
 protected:
 	UPROPERTY()
@@ -36,4 +40,6 @@ protected:
 	UPROPERTY()
 	class UAttributeSetArmor* AttributeSetArmor;
 
+	UPROPERTY()
+	class UAttributeSetWeapon* AttributeSetWeapon;
 };

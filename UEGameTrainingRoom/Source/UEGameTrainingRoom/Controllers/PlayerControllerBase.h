@@ -22,10 +22,9 @@ public:
 
 	virtual void OnPossess(APawn* aPawn) override;
 
-// 	FORCEINLINE class UPlayerMainUI* GetPlayerMainUI() 
-// 	{
-// 		return Cast<class UPlayerMainUI>(MainUI);
-// 	}
+	void CreateMainUI();
+
+	void CreateHeadUpUI();
 
 protected:
 	FORCEINLINE FGenericTeamId GetGenericTeamId() const { return TeamId; }

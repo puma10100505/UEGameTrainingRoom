@@ -63,6 +63,8 @@ public:
 
 	class ACharacterBase* GetOwnerCharacter() const;
 
+	class UAttributeSetWeapon* GetWeaponAttributeSet() const ;
+
 protected:
 	// [Server + Local]
 	UFUNCTION(Server, Reliable, WithValidation)
@@ -75,10 +77,10 @@ protected:
 	void ClientFireEffect_Implementation(bool IsHit, const FHitResult& HitInfo);
 
 	UFUNCTION(NetMulticast, Unreliable)
-	virtual void ClientFireMuzzleEffect(const FName& MuzzleName, class USoundBase* MuzzleSound, class UParticleSystem* MuzzleFlash,
-		class ACharacterBase* InCharacter);
-	void ClientFireMuzzleEffect_Implementation(const FName& MuzzleName, class USoundBase* MuzzleSound, class UParticleSystem* MuzzleFlash,
-		class ACharacterBase* InCharacter);
+	virtual void ClientFireMuzzleEffect(const FName& MuzzleName, class USoundBase* MuzzleSound, 
+		class UParticleSystem* MuzzleFlash, class ACharacterBase* InCharacter);
+	void ClientFireMuzzleEffect_Implementation(const FName& MuzzleName, class USoundBase* MuzzleSound, 
+		class UParticleSystem* MuzzleFlash, class ACharacterBase* InCharacter);
 
 	UFUNCTION()
 	void OnRep_CurrentAmmo(int32 OldCurrentAmmo);
@@ -101,5 +103,6 @@ protected:
 
 	UPROPERTY(BlueprintAssignable, Category = EventDispachers)
 	FWeaponAmmoChanged WeaponAmmoChangedDelegate;
+
 
 };

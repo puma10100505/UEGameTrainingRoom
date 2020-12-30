@@ -129,8 +129,19 @@ protected:
 
 	void SetPreparedForBattle();
 
+	virtual void OnRep_PlayerState() override;
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnClientAttributeDataPreparedEvent();
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnServerAttributeDataPreparedEvent();
+
 private:
 	void InitializeASCFromPlayerState();
+
+	// 初始化头顶UI
+	void InitializeHeadUpUI();
 
 protected: // RPC
 	UFUNCTION(Server, Reliable, WithValidation)
@@ -152,10 +163,6 @@ protected: // RPC
 	void ServerRecoveryFromAiming();
 	bool ServerRecoveryFromAiming_Validate();
 	void ServerRecoveryFromAiming_Implementation();
-
-	UFUNCTION(Client, Unreliable)
-	void ClientHideHeadUpUI();
-	void ClientHideHeadUpUI_Implementation();
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
@@ -231,7 +238,10 @@ protected:
 	class UAbilityComponent* AbilityComp;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = UISettings)
-	TSubclassOf<class UUserWidget> HeadUpUIClass;
+	TSubclassOf<class UPlayerHeadUpUI> HeadUpUIClass;
+
+	UPROPERTY()
+	class UPlayerHeadUpUI* HeadUpUIInstance;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Animations)
 	class UAnimationAsset* HitReactAnim;
@@ -239,10 +249,10 @@ protected:
 	UPROPERTY(Transient, BlueprintReadWrite)
 	class UAbilitySystemComponent* AbilitySystem;
 
-	UPROPERTY(Transient, BlueprintReadWrite, Replicated)
+	UPROPERTY(Transient, BlueprintReadWrite)
 	class UAttributeSetHealth* AttributeSetHealth;
 
-	UPROPERTY(Transient, BlueprintReadWrite, Replicated)
+	UPROPERTY(Transient, BlueprintReadWrite)
 	class UAttributeSetArmor* AttributeSetArmor;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ASC|Attributes")

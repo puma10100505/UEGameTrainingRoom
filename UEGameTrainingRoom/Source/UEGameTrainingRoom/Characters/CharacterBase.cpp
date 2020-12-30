@@ -67,11 +67,13 @@ ACharacterBase::ACharacterBase()
 	
 }
 
+// Server Only
 void ACharacterBase::InitializeASCFromPlayerState()
 {
 	APlayerStateBase* PS = GetPlayerState<APlayerStateBase>();
 	if (PS)
 	{
+		// Set the ASC and AttributeSet ON SERVER!
 		AbilitySystem = PS->GetAbilitySystemComponent();
 
 		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS, this);
@@ -93,13 +95,55 @@ void ACharacterBase::InitializeASCFromPlayerState()
 	}
 }
 
+void ACharacterBase::InitializeHeadUpUI()
+{
+	if (HeadUpUIInstance || IsValid(AbilitySystem) == false)
+	{
+		return;
+	}
+
+	// 自己控制的人物头上不显示这个UI
+	if (IsPlayerControlled() && IsLocallyControlled())
+	{
+		return;
+	}
+
+	if (IsValid(GetPlayerState()) == false)
+	{
+		return;
+	}
+
+	APlayerControllerBase* PC = Cast<APlayerControllerBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
+	if (PC && PC->IsLocalPlayerController())
+	{
+		
+	}
+}
+
+// Client Only
+void ACharacterBase::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+
+	// 初始化ASC和属性以及执行用于设置初始数据的GE（DefaultAttributes配置）
+	InitializeASCFromPlayerState();
+
+	OnClientAttributeDataPreparedEvent();
+
+	// TODO: 创建头顶UI
+	
+
+	// TODO: 创建主UI
+}
+
+// Server Only
 void ACharacterBase::PossessedBy(class AController* InController)
 {
 	Super::PossessedBy(InController);
 
 	InitializeASCFromPlayerState();
 
-	ClientHideHeadUpUI();
+	OnServerAttributeDataPreparedEvent();
 }
 
 void ACharacterBase::InitializeWeapon()
@@ -441,8 +485,8 @@ void ACharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(ACharacterBase, bIsPreparingFire);	
 	DOREPLIFETIME(ACharacterBase, bWantsToAim);
 	DOREPLIFETIME(ACharacterBase, bIsPreparedForBattle);
-	DOREPLIFETIME(ACharacterBase, AttributeSetHealth);
-	DOREPLIFETIME(ACharacterBase, AttributeSetArmor);
+	// DOREPLIFETIME(ACharacterBase, AttributeSetHealth);
+	// DOREPLIFETIME(ACharacterBase, AttributeSetArmor);
 }
 
 bool ACharacterBase::ServerModifyMoveSpeed_Validate(float NewSpeed)
@@ -486,28 +530,6 @@ bool ACharacterBase::ServerRecoveryFromAiming_Validate()
 void ACharacterBase::ServerRecoveryFromAiming_Implementation()
 {
 	RecoveryFromAiming();
-}
-
-void ACharacterBase::ClientHideHeadUpUI_Implementation()
-{
-	if (GetController()->IsLocalPlayerController())
-	{
-		HeadUpWidget->SetVisibility(false, true);
-		UE_LOG(LogCharacter, Log, TEXT("After hide head up ui"));
-	}
-	
-	/*
-	if (GetLocalRole() == ROLE_AutonomousProxy)
-	{
-		HeadUpWidget->SetVisibility(false, true);
-		UE_LOG(LogCharacter, Log, TEXT("After hide head up ui"));
-	}
-	else
-	{
-		HeadUpWidget->SetVisibility(true, true);
-		UE_LOG(LogCharacter, Log, TEXT("After display head up ui"));
-	}
-	*/
 }
 
 void ACharacterBase::TakeHurt(const AWeaponBase* SourceWeapon, float Distance)

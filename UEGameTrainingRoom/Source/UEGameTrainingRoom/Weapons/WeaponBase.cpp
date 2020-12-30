@@ -11,6 +11,8 @@
 #include "Sound/SoundBase.h"
 #include "Particles/ParticleSystem.h"
 #include "Components/ArrowComponent.h"
+#include "Attributes/AttributeSetWeapon.h"
+#include "States/PlayerStateBase.h"
 
 
 DEFINE_LOG_CATEGORY(LogWeapon);
@@ -298,4 +300,18 @@ void AWeaponBase::OnRep_TotalLeftAmmo(int32 OldTotalLeftAmmo)
 	{
 		WeaponAmmoChangedDelegate.Broadcast(CurrentAmmo, TotalLeftAmmo);
 	}
+}
+
+UAttributeSetWeapon* AWeaponBase::GetWeaponAttributeSet() const
+{
+	if (IsValid(OwnerCharacter))
+	{
+		APlayerStateBase* PS = OwnerCharacter->GetPlayerState<APlayerStateBase>();
+		if (PS)
+		{
+			return PS->GetWeaponAttributeSet();
+		}
+	}
+
+	return nullptr;
 }
