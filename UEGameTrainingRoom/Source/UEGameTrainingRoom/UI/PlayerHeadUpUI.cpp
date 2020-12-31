@@ -11,15 +11,15 @@ UPlayerHeadUpUI::UPlayerHeadUpUI(const FObjectInitializer& ObjectInitializer)
     
 }
 
-void UPlayerHeadUpUI::OnHealthChanged(float NewHealth, float MaxHealth)
-{
-    HealthPercent = CalcPercent(NewHealth, MaxHealth);
-}
-
-void UPlayerHeadUpUI::OnArmorChanged(float NewArmor, float MaxArmor)
-{
-    ArmorPercent = CalcPercent(NewArmor, MaxArmor);
-}
+// void UPlayerHeadUpUI::OnHealthChanged(float NewHealth, float MaxHealth)
+// {
+//     HealthPercent = CalcPercent(NewHealth, MaxHealth);
+// }
+//
+// void UPlayerHeadUpUI::OnArmorChanged(float NewArmor, float MaxArmor)
+// {
+//     ArmorPercent = CalcPercent(NewArmor, MaxArmor);
+// }
 
 bool UPlayerHeadUpUI::Initialize()
 {
@@ -48,13 +48,13 @@ void UPlayerHeadUpUI::InitializeModelDelegates(ACharacterBase* OwnerCharacter)
         return;
     }
 
-    if (OwnerCharacter->GetHealthChangedDelegator().IsBound() == false)
-    {
-        OwnerCharacter->GetHealthChangedDelegator().AddDynamic(this, &UPlayerHeadUpUI::OnHealthChanged);
-    }
-
-    if (OwnerCharacter->GetArmorChangedDelegator().IsBound() == false)
-    {
-        OwnerCharacter->GetArmorChangedDelegator().AddDynamic(this, &UPlayerHeadUpUI::OnArmorChanged);
-    }
+    // if (OwnerCharacter->GetHealthChangedDelegator().IsBound() == false)
+    // {
+    //     OwnerCharacter->GetHealthChangedDelegator().AddDynamic(this, &UPlayerHeadUpUI::OnHealthChanged);
+    // }
+    //
+    // if (OwnerCharacter->GetArmorChangedDelegator().IsBound() == false)
+    // {
+    //     OwnerCharacter->GetArmorChangedDelegator().AddDynamic(this, &UPlayerHeadUpUI::OnArmorChanged);
+    // }
 }

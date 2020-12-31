@@ -20,6 +20,10 @@
 #include "PlayerStateBase.h"
 #include "AbilityComponent.h"
 #include "AbilitySystemComponent.h"
+#include "PlayerControllerBase.h"
+#include "Kismet/GameplayStatics.h"
+#include "Attributes/AttributeSetHealth.h"
+#include "Attributes/AttributeSetArmor.h"
 
 DEFINE_LOG_CATEGORY(LogCharacter);
 
@@ -60,8 +64,8 @@ ACharacterBase::ACharacterBase()
 	}
 
 	// Setting of HeadUp UI
-	HeadUpWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("HeadUpWidget"));
-	HeadUpWidget->SetupAttachment(GetMesh(), FName(TEXT("UI_Head")));
+	HeadUpWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("HeadUpWidgetComponent"));
+	HeadUpWidgetComponent->SetupAttachment(GetMesh(), FName(TEXT("UI_Head")));
 
 	AbilityComp = CreateDefaultSubobject<UAbilityComponent>(TEXT("Ability"));
 	
@@ -116,7 +120,19 @@ void ACharacterBase::InitializeHeadUpUI()
 	APlayerControllerBase* PC = Cast<APlayerControllerBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
 	if (PC && PC->IsLocalPlayerController())
 	{
-		
+		if (HeadUpUIClass)
+		{
+			HeadUpUIInstance = CreateWidget<UPlayerHeadUpUI>(PC, HeadUpUIClass);
+			if (HeadUpUIInstance && HeadUpWidgetComponent)
+			{
+				HeadUpWidgetComponent->SetWidget(HeadUpUIInstance);
+
+				// 设置HeadUpUI的初始值
+				HeadUpUIInstance->SetHealthPercentage(GetAttributeSetHealth()->GetHealth(), GetAttributeSetHealth()->GetMaxHealth());
+				HeadUpUIInstance->SetArmorPercentage(GetAttributeSetArmor()->GetArmor(), GetAttributeSetArmor()->GetMaxArmor());
+				HeadUpUIInstance->SetOwningCharacter(this);
+			}
+		}
 	}
 }
 
@@ -130,8 +146,8 @@ void ACharacterBase::OnRep_PlayerState()
 
 	OnClientAttributeDataPreparedEvent();
 
-	// TODO: 创建头顶UI
-	
+	// 创建头顶UI
+	InitializeHeadUpUI();
 
 	// TODO: 创建主UI
 }
@@ -144,6 +160,8 @@ void ACharacterBase::PossessedBy(class AController* InController)
 	InitializeASCFromPlayerState();
 
 	OnServerAttributeDataPreparedEvent();
+
+	InitializeHeadUpUI();
 }
 
 void ACharacterBase::InitializeWeapon()
@@ -181,16 +199,16 @@ void ACharacterBase::BeginPlay()
 	Super::BeginPlay();
 	
 	// 初始化头顶UI的委托
-	if (GetLocalRole() < ROLE_Authority)
-	{
-		if (HeadUpWidget && HeadUpWidget->GetUserWidgetObject())
-		{
-			if (UPlayerHeadUpUI* HeadUpUIInst = Cast<UPlayerHeadUpUI>(HeadUpWidget->GetUserWidgetObject()))
-			{
-				HeadUpUIInst->InitializeModelDelegates(this);
-			}
-		}
-	}
+	// if (GetLocalRole() < ROLE_Authority)
+	// {
+	// 	if (HeadUpWidgetComponent && HeadUpWidgetComponent->GetUserWidgetObject())
+	// 	{
+	// 		if (UPlayerHeadUpUI* HeadUpUIInst = Cast<UPlayerHeadUpUI>(HeadUpWidgetComponent->GetUserWidgetObject()))
+	// 		{
+	// 			HeadUpUIInst->InitializeModelDelegates(this);
+	// 		}
+	// 	}
+	// }
 
 	if (GetLocalRole() == ROLE_Authority)
 	{
@@ -198,8 +216,8 @@ void ACharacterBase::BeginPlay()
 			this, &ACharacterBase::SetPreparedForBattle, 5.f, false);
 	}
 
-	OnHealthChangedDelegator.Broadcast(Health, MaxHealth);
-	OnArmorChangedDelegator.Broadcast(Armor, MaxArmor);
+	// OnHealthChangedDelegator.Broadcast(Health, MaxHealth);
+	// OnArmorChangedDelegator.Broadcast(Armor, MaxArmor);
 }
 
 void ACharacterBase::SetPreparedForBattle()
@@ -221,10 +239,10 @@ void ACharacterBase::InitializeAttributes()
 
 	if (HeadUpUIClass)
 	{
-		HeadUpWidget->SetWidgetClass(HeadUpUIClass);
-		HeadUpWidget->SetWidgetSpace(EWidgetSpace::Screen);
-		HeadUpWidget->SetDrawSize(FVector2D(150.f, 20.f));
-		HeadUpWidget->SetVisibility(true, true);
+		HeadUpWidgetComponent->SetWidgetClass(HeadUpUIClass);
+		HeadUpWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
+		HeadUpWidgetComponent->SetDrawSize(FVector2D(150.f, 20.f));
+		HeadUpWidgetComponent->SetVisibility(true, true);
 	}
 
 

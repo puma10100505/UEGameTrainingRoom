@@ -309,7 +309,7 @@ UAttributeSetWeapon* AWeaponBase::GetWeaponAttributeSet() const
 		APlayerStateBase* PS = OwnerCharacter->GetPlayerState<APlayerStateBase>();
 		if (PS)
 		{
-			return PS->GetWeaponAttributeSet();
+			return PS->GetAttributeSetWeapon();
 		}
 	}
 

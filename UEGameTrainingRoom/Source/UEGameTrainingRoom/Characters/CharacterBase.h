@@ -232,7 +232,7 @@ protected:
 	FCharacterArmorChanged OnArmorChangedDelegator;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Components)
-	class UWidgetComponent* HeadUpWidget;
+	class UWidgetComponent* HeadUpWidgetComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Components)
 	class UAbilityComponent* AbilityComp;
