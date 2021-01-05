@@ -101,7 +101,7 @@ void ACharacterBase::InitializeASCFromPlayerState()
 
 void ACharacterBase::InitializeHeadUpUI()
 {
-	if (HeadUpUIInstance || IsValid(AbilitySystem) == false)
+ 	if (HeadUpUIInstance || IsValid(AbilitySystem) == false)
 	{
 		return;
 	}
@@ -136,6 +136,32 @@ void ACharacterBase::InitializeHeadUpUI()
 	}
 }
 
+void ACharacterBase::BindAbilityInput()
+{
+	if (bAbilityInputBound == false && IsValid(AbilitySystem) && IsValid(InputComponent))
+	{
+		AbilitySystem->BindAbilityActivationToInputComponent(InputComponent,
+			FGameplayAbilityInputBinds(FString("Jump"), FString(""), FString("EAbilityInputID")));
+
+		bAbilityInputBound = true;
+	}
+}
+
+void ACharacterBase::InitializeDefaultAbilities()
+{
+	if (GetLocalRole() != ROLE_Authority || IsValid(AbilitySystem) == false || bAbilityGranted)
+	{
+		return;		
+	}
+
+	for (TSubclassOf<UGameplayAbility>& DefaultAbilityItem: DefaultAbilities)
+	{		
+		AbilitySystem->GiveAbility(FGameplayAbilitySpec(DefaultAbilityItem, 1.f, INDEX_NONE, this));		
+	}
+
+	bAbilityGranted = true;
+}
+
 // Client Only
 void ACharacterBase::OnRep_PlayerState()
 {
@@ -148,6 +174,10 @@ void ACharacterBase::OnRep_PlayerState()
 
 	// 创建头顶UI
 	InitializeHeadUpUI();
+
+	//BindAbilityInput();
+	
+	InitializeDefaultAbilities();
 
 	// TODO: 创建主UI
 }
@@ -162,6 +192,8 @@ void ACharacterBase::PossessedBy(class AController* InController)
 	OnServerAttributeDataPreparedEvent();
 
 	InitializeHeadUpUI();
+
+	InitializeDefaultAbilities();
 }
 
 void ACharacterBase::InitializeWeapon()
@@ -197,6 +229,8 @@ void ACharacterBase::InitializeWeapon()
 void ACharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	
 	
 	// 初始化头顶UI的委托
 	// if (GetLocalRole() < ROLE_Authority)
@@ -301,6 +335,7 @@ void ACharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	PlayerInputComponent->BindAction("Aim", IE_Released, this, &ACharacterBase::RecoveryFromAiming);
 	PlayerInputComponent->BindAction("AbilityRocket", IE_Pressed, this, &ACharacterBase::LaunchRocket);
 
+	//BindAbilityInput();
 }
 
 void ACharacterBase::OnStartFire()

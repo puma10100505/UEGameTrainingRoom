@@ -31,6 +31,9 @@ public:
 	class UAttributeSetWeapon* GetAttributeSetWeapon() const ;
 
 protected:
+	void OnHealthAttributeChanged(const FOnAttributeChangeData& Data);
+	
+protected:
 	UPROPERTY()
 	class UAbilitySystemComponent* AbilitySystem;
 

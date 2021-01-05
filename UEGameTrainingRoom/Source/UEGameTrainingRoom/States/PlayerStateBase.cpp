@@ -6,6 +6,8 @@
 #include "Attributes/AttributeSetArmor.h"
 #include "Attributes/AttributeSetHealth.h"
 #include "Attributes/AttributeSetWeapon.h"
+#include "CharacterBase.h"
+#include "PlayerHeadUpUI.h"
 
 
 APlayerStateBase::APlayerStateBase()
@@ -26,7 +28,23 @@ void APlayerStateBase::BeginPlay()
     Super::BeginPlay();
 
     // TODO: 注册属性变更回调, 在属性变更处理函数中调用UI接口更新UI数据
+    AbilitySystem->GetGameplayAttributeValueChangeDelegate(
+        AttributeSetHealth->GetHealthAttribute()).AddUObject(this, &APlayerStateBase::OnHealthAttributeChanged);
 }
+
+void APlayerStateBase::OnHealthAttributeChanged(const FOnAttributeChangeData& Data)
+{
+    ACharacterBase* Character = Cast<ACharacterBase>(GetPawn());
+    if (Character)
+    {
+        UPlayerHeadUpUI* HeadUpUI = Character->GetHeadUpUIInstance();
+        if (HeadUpUI)
+        {
+            HeadUpUI->SetHealthPercentage(Data.NewValue, AttributeSetHealth->GetMaxHealth());
+        }
+    }
+}
+
 
 UAbilitySystemComponent* APlayerStateBase::GetAbilitySystemComponent() const
 {

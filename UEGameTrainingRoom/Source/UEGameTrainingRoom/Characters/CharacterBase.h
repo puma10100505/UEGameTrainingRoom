@@ -20,6 +20,12 @@ DECLARE_LOG_CATEGORY_EXTERN(LogCharacter, Log, All);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FCharacterHealthChanged, float, NewHealth, float, MaxHealth);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FCharacterArmorChanged, float, NewArmor, float, MaxArmor);
 
+enum class EAbilityInputID: uint8
+{
+	None,
+	Jump
+};
+
 UCLASS()
 class UEGAMETRAININGROOM_API ACharacterBase : 
 	public ACharacter, 
@@ -93,6 +99,11 @@ public:
 
 	virtual class UAttributeSetArmor* GetAttributeSetArmor() const;
 
+	FORCEINLINE class UPlayerHeadUpUI* GetHeadUpUIInstance() const
+	{
+		return HeadUpUIInstance;
+	}
+
 protected:
 	void MoveForward(float Value);
 	void MoveRight(float Value);
@@ -142,6 +153,10 @@ private:
 
 	// 初始化头顶UI
 	void InitializeHeadUpUI();
+
+	void BindAbilityInput();
+
+	void InitializeDefaultAbilities();
 
 protected: // RPC
 	UFUNCTION(Server, Reliable, WithValidation)
@@ -258,7 +273,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ASC|Attributes")
 	TSubclassOf<class UGameplayEffect> DefaultAttributes;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "ASC|Abilities")
+	TArray<TSubclassOf<class UGameplayAbility>> DefaultAbilities;
+
 private:
 	FTimerHandle TimerHandle_Fire;
 	FTimerHandle TimerHandle_SetPrepareForBattle;
+	bool bAbilityInputBound = false;
+	bool bAbilityGranted = false;
 };
