@@ -174,8 +174,6 @@ void ACharacterBase::OnRep_PlayerState()
 
 	// 创建头顶UI
 	InitializeHeadUpUI();
-
-	//BindAbilityInput();
 	
 	InitializeDefaultAbilities();
 
@@ -538,8 +536,6 @@ void ACharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(ACharacterBase, bIsPreparingFire);	
 	DOREPLIFETIME(ACharacterBase, bWantsToAim);
 	DOREPLIFETIME(ACharacterBase, bIsPreparedForBattle);
-	// DOREPLIFETIME(ACharacterBase, AttributeSetHealth);
-	// DOREPLIFETIME(ACharacterBase, AttributeSetArmor);
 }
 
 bool ACharacterBase::ServerModifyMoveSpeed_Validate(float NewSpeed)
@@ -612,8 +608,8 @@ void ACharacterBase::TakeHurt(const AWeaponBase* SourceWeapon, float Distance)
 
 void ACharacterBase::ChangeLife(float Value)
 {
-	float OldArmor = Armor;
-	float OldHealth = Health;
+	const float OldArmor = Armor;
+	const float OldHealth = Health;
 
 	if (Armor > 0)
 	{
@@ -621,6 +617,7 @@ void ACharacterBase::ChangeLife(float Value)
 		if (Armor < 0)
 		{
 			Health += Armor;
+			Armor = 0;
 		}
 	}
 	else 

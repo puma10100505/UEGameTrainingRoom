@@ -95,9 +95,11 @@ protected:
 	UPROPERTY(BlueprintReadWrite, Replicated, Category = Owner)
 	class ACharacterBase* OwnerCharacter;
 
+	// TODO: AttributeSetWeapon
 	UPROPERTY(BlueprintReadWrite, ReplicatedUsing = OnRep_CurrentAmmo, Category = WeaponData)
 	int32 CurrentAmmo;
 
+	// TODO: AttributeSetWeapon
 	UPROPERTY(BlueprintReadWrite, ReplicatedUsing = OnRep_TotalLeftAmmo, Category = WeaponData)
 	int32 TotalLeftAmmo;
 
