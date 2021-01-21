@@ -11,14 +11,15 @@
 #include "GameplayEffectTypes.h"
 #include "HurtableInterface.h"
 #include "LifeInterface.h"
+#include "GameplayAbilitySpec.h"
 
 
 #include "CharacterBase.generated.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogCharacter, Log, All);
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FCharacterHealthChanged, float, NewHealth, float, MaxHealth);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FCharacterArmorChanged, float, NewArmor, float, MaxArmor);
+// DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FCharacterHealthChanged, float, NewHealth, float, MaxHealth);
+// DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FCharacterArmorChanged, float, NewArmor, float, MaxArmor);
 
 enum class EAbilityInputID: uint8
 {
@@ -33,6 +34,26 @@ class UEGAMETRAININGROOM_API ACharacterBase :
 	public IAbilitySystemInterface
 {
 	GENERATED_BODY()
+
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|UI")
+	TSubclassOf<class UPlayerHeadUpUI> HeadUpUIClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Character|Attributes")
+	TSubclassOf<class UGameplayEffect> DefaultAttributes;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Abilities")
+	TSubclassOf<class UGameplayAbility> FireAbility;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Abilities")
+	TSubclassOf<class UGameplayAbility> ADSAbility;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Abilities")
+	TSubclassOf<class UGameplayAbility> ReloadAbility;
+
+	// 初始武器类型
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Weapons")
+	TSubclassOf<AWeaponBase> InitialWeaponClass;
 
 public:
 	// Sets default values for this character's properties
@@ -70,8 +91,8 @@ public:
 
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 	FORCEINLINE class AWeaponBase* GetCurrentWeapon() const { return PrimaryWeapon; }
-	FORCEINLINE FCharacterHealthChanged& GetHealthChangedDelegator() { return OnHealthChangedDelegator; }
-	FORCEINLINE FCharacterArmorChanged& GetArmorChangedDelegator() { return OnArmorChangedDelegator; }
+	// FORCEINLINE FCharacterHealthChanged& GetHealthChangedDelegator() { return OnHealthChangedDelegator; }
+	// FORCEINLINE FCharacterArmorChanged& GetArmorChangedDelegator() { return OnArmorChangedDelegator; }
 	FORCEINLINE class UAnimationAsset* GetHitReactAnim() const { return HitReactAnim; }
 
 	// TODO
@@ -97,12 +118,35 @@ public:
 
 	virtual class UAttributeSetHealth* GetAttributeSetHealth() const;
 
-	virtual class UAttributeSetArmor* GetAttributeSetArmor() const;
+	// virtual class UAttributeSetArmor* GetAttributeSetArmor() const;
 
 	FORCEINLINE class UPlayerHeadUpUI* GetHeadUpUIInstance() const
 	{
 		return HeadUpUIInstance;
 	}
+
+	virtual void OnStartFire();
+	virtual void OnStopFire();
+	virtual bool CanFire() const;
+
+	void ActivateFireAbility();
+
+	void CancelFireAbility();
+		
+	virtual void KillToDeath();
+
+	void ActivateADSAbility();
+
+	void DeactivateADSAbility();
+
+	void ActivateReloadAbility();
+
+	FORCEINLINE bool GetIsPreparedForBattle() const { return bIsPreparedForBattle; }
+
+	virtual void SwitchToAiming();
+	virtual void RecoveryFromAiming();
+
+	virtual bool CanReload() const;
 
 protected:
 	void MoveForward(float Value);
@@ -110,19 +154,9 @@ protected:
 	void TurnAtRate(float Rate);
 	void LookUpAtRate(float Rate);
 
-	virtual bool CanFire();
-	virtual bool CanReload();
-
-	virtual void SwitchToAiming();
-	virtual void RecoveryFromAiming();
-
-	virtual void OnStartFire();
-	virtual void OnStopFire();
-
-	virtual void KillToDeath();
-
 	UFUNCTION(BlueprintNativeEvent)
 	void AfterCharacterDeath();
+
 	virtual void AfterCharacterDeath_Implementation();
 
 	UFUNCTION()
@@ -132,11 +166,11 @@ protected:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	UFUNCTION()
-	void OnRep_HealthChanged(float OldHealth);
+	// UFUNCTION()
+	// void OnRep_HealthChanged(float OldHealth);
 
-	UFUNCTION()
-	void OnRep_ArmorChanged(float OldArmor);
+	// UFUNCTION()
+	// void OnRep_ArmorChanged(float OldArmor);
 
 	void SetPreparedForBattle();
 
@@ -195,30 +229,14 @@ protected:
 	class UCameraComponent* FollowCamera;
 
 	// 主武器实例
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, ReplicatedUsing = OnRep_PrimaryWeapon, Category = Weapons)
+	UPROPERTY(BlueprintReadWrite, ReplicatedUsing = OnRep_PrimaryWeapon, Category = Weapons)
 	class AWeaponBase* PrimaryWeapon;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Replicated, Category = Weapons)
+	UPROPERTY(BlueprintReadWrite, Replicated, Category = Weapons)
 	bool bIsAiming;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Replicated, Category = Weapons)
+	UPROPERTY(BlueprintReadWrite, Replicated, Category = Weapons)
 	bool bIsFiring;
-
-	// 初始武器类型
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Weapons)
-	TSubclassOf<AWeaponBase> InitialWeaponClass;
-
-	UPROPERTY(BlueprintReadWrite, ReplicatedUsing = OnRep_HealthChanged, Category = Attributes)
-	float Health;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Attributes)
-	float MaxHealth;
-
-	UPROPERTY(BlueprintReadWrite, ReplicatedUsing = OnRep_ArmorChanged, Category = Attributes)
-	float Armor;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Attributes)
-	float MaxArmor;
 
 	// 是否准备射击
 	UPROPERTY(BlueprintReadWrite, Replicated, Category = Weapons)
@@ -240,20 +258,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, Category = Attributes)
 	float WalkSpeed;
 
-	UPROPERTY(BlueprintAssignable, Category = EventDispachers)
-	FCharacterHealthChanged OnHealthChangedDelegator;
-
-	UPROPERTY(BlueprintAssignable, Category = EventDispachers)
-	FCharacterArmorChanged OnArmorChangedDelegator;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Components)
 	class UWidgetComponent* HeadUpWidgetComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Components)
 	class UAbilityComponent* AbilityComp;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = UISettings)
-	TSubclassOf<class UPlayerHeadUpUI> HeadUpUIClass;
 
 	UPROPERTY()
 	class UPlayerHeadUpUI* HeadUpUIInstance;
@@ -267,18 +276,19 @@ protected:
 	UPROPERTY(Transient, BlueprintReadWrite)
 	class UAttributeSetHealth* AttributeSetHealth;
 
-	UPROPERTY(Transient, BlueprintReadWrite)
-	class UAttributeSetArmor* AttributeSetArmor;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ASC|Attributes")
-	TSubclassOf<class UGameplayEffect> DefaultAttributes;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "ASC|Abilities")
-	TArray<TSubclassOf<class UGameplayAbility>> DefaultAbilities;
-
 private:
 	FTimerHandle TimerHandle_Fire;
 	FTimerHandle TimerHandle_SetPrepareForBattle;
 	bool bAbilityInputBound = false;
 	bool bAbilityGranted = false;
+
+protected:
+	UPROPERTY(BlueprintReadOnly, Replicated)
+	FGameplayAbilitySpecHandle GameplayAbility_FireHandle;
+
+	UPROPERTY(BlueprintReadOnly, Replicated)
+	FGameplayAbilitySpecHandle GameplayAbility_ADSHandle;
+
+	UPROPERTY(BlueprintReadOnly, Replicated)
+	FGameplayAbilitySpecHandle GameplayAbility_ReloadHandle;
 };

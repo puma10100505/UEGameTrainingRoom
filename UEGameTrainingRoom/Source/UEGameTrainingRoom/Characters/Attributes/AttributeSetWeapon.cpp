@@ -2,6 +2,7 @@
 
 
 #include "AttributeSetWeapon.h"
+#include "AttributeSet.h"
 #include "Net/UnrealNetwork.h"
 
 void UAttributeSetWeapon::OnRep_CurrentAmmoInClip(const FGameplayAttributeData& OldAmmoInClip)

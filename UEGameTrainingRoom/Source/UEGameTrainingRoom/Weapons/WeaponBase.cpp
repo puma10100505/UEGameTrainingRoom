@@ -11,7 +11,6 @@
 #include "Sound/SoundBase.h"
 #include "Particles/ParticleSystem.h"
 #include "Components/ArrowComponent.h"
-#include "Attributes/AttributeSetWeapon.h"
 #include "States/PlayerStateBase.h"
 
 
@@ -30,7 +29,8 @@ void AWeaponBase::BeginPlay()
 {
 	Super::BeginPlay();	
 
-	WeaponAmmoChangedDelegate.Broadcast(CurrentAmmo, TotalLeftAmmo);
+
+	//  WeaponAmmoChangedDelegate.Broadcast(CurrentAmmo, TotalLeftAmmo);
 }
 
 // Called every frame
@@ -78,6 +78,18 @@ void AWeaponBase::Fire()
 	}
 }
 
+UAbilitySystemComponent* AWeaponBase::GetAbilitySystemComponent() const
+{
+	if (IsValid(GetOwnerCharacter()))
+	{
+		return GetOwnerCharacter()->GetAbilitySystemComponent();
+	}
+	else
+	{
+		return nullptr;
+	}
+}
+
 void AWeaponBase::FireProcess()
 {
 	UE_LOG(LogWeapon, Log, TEXT("Entry of fire process"));
@@ -89,11 +101,28 @@ void AWeaponBase::FireProcess()
 	bool IsHit = WeaponLineTrace_Single(HitInfo);
 
 	// Take Damage
-	if (IsHit)
+	if (IsHit /* && GetOwnerCharacter() && GetOwnerCharacter()->GetLocalRole() == ROLE_Authority*/)
 	{
 		if (ACharacterBase* HitCharacter = Cast<ACharacterBase>(HitInfo.GetActor()))
 		{
-			HitCharacter->TakeHurt(this, HitInfo.Distance);
+			if (IsValid(HitCharacter->GetAbilitySystemComponent()) && IsValid(GetAbilitySystemComponent()))
+			{
+				if (HurtEffect)
+				{
+					FGameplayEffectContextHandle EffectContext = GetAbilitySystemComponent()->MakeEffectContext();
+					EffectContext.AddSourceObject(this);
+					FGameplayEffectSpecHandle NewHandle = GetAbilitySystemComponent()->MakeOutgoingSpec(HurtEffect, 1.f, EffectContext);
+					if (NewHandle.IsValid())
+					{
+						NewHandle.Data.Get()->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName("Gameplay.Weapon.BaseDamage")), GetWeaponModelData().Damage);
+						GetAbilitySystemComponent()->ApplyGameplayEffectSpecToTarget(*NewHandle.Data.Get(), HitCharacter->GetAbilitySystemComponent());
+					}
+				}
+			} 
+			else
+			{
+				UE_LOG(LogCharacter, Error, TEXT("Not found ASC of target or self"));
+			}
 		}
 	}
 
@@ -112,7 +141,13 @@ void AWeaponBase::FireProcess()
 
 bool AWeaponBase::CanFire()
 {
-	if (CurrentAmmo <= 0) 
+	UAttributeSetWeapon* Attr = GetWeaponAttributeSet();
+	if (Attr == nullptr)
+	{
+		return false;
+	}
+
+	if (Attr->GetCurrentAmmoInClip() <= 0) 
 	{
 		UE_LOG(LogWeapon, Log, TEXT("No ammo left"));
 		return false;
@@ -165,57 +200,92 @@ void AWeaponBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AWeaponBase, OwnerCharacter);
-	DOREPLIFETIME(AWeaponBase, CurrentAmmo);
-	DOREPLIFETIME(AWeaponBase, TotalLeftAmmo);
+	// DOREPLIFETIME(AWeaponBase, CurrentAmmo);
+	// DOREPLIFETIME(AWeaponBase, TotalLeftAmmo);
 }
 
 void AWeaponBase::InitializeWeaponData()
 {
-	CurrentAmmo = WeaponData.ClipCapacity;
-	TotalLeftAmmo = WeaponData.MaxAmmo;
+	// CurrentAmmo = WeaponData.ClipCapacity;
+	// TotalLeftAmmo = WeaponData.MaxAmmo;
+
+	UAttributeSetWeapon* AttributeSetWeapon = GetWeaponAttributeSet();
+	if (AttributeSetWeapon)
+	{
+		AttributeSetWeapon->SetCurrentAmmoInClip(WeaponData.ClipCapacity);
+		AttributeSetWeapon->SetTotalCarriedAmmo(WeaponData.MaxAmmo);
+	}
+
 }
 
 void AWeaponBase::ConsumeAmmo()
 {
-	CurrentAmmo -= WeaponData.BulletNumPerShoot;
+	UAttributeSetWeapon* AttributeSetWeapon = GetWeaponAttributeSet();
+	if (AttributeSetWeapon == nullptr)
+	{
+		UE_LOG(LogWeapon, Error, TEXT("Not found AttributeSetWeapon"));
+		return ;
+	}
+
+	AttributeSetWeapon->SetCurrentAmmoInClip(
+		AttributeSetWeapon->GetCurrentAmmoInClip() - WeaponData.BulletNumPerShoot);
 
 	if (NeedReload())
 	{
 		Reload();
 	}
-
-	// WeaponAmmoChangedDelegate.Broadcast(CurrentAmmo, TotalLeftAmmo);
 }
 
 bool AWeaponBase::NeedReload()
 {
-	return CurrentAmmo <= 0;
+	UAttributeSetWeapon* AttributeSetWeapon = GetWeaponAttributeSet();
+
+	if (AttributeSetWeapon == nullptr)
+	{
+		return false;
+	}
+
+	return AttributeSetWeapon->GetCurrentAmmoInClip() <= 0;
 }
 
 void AWeaponBase::Reload()
 {
+	UAttributeSetWeapon* AttributeSetWeapon = GetWeaponAttributeSet();
+	if (!AttributeSetWeapon)
+	{
+		UE_LOG(LogWeapon, Error, TEXT("Not found weapon attribute"));
+		return;
+	}
+
 	// 换弹数值变更
-	int32 AmmoDiff = WeaponData.ClipCapacity - CurrentAmmo;
+	int32 AmmoDiff = WeaponData.ClipCapacity - AttributeSetWeapon->GetCurrentAmmoInClip();
 	if (AmmoDiff <= 0)
 	{
 		return;
 	}
 
-	if (AmmoDiff >= TotalLeftAmmo)
+	if (AmmoDiff >= AttributeSetWeapon->GetTotalCarriedAmmo())
 	{
-		CurrentAmmo += TotalLeftAmmo;
-		TotalLeftAmmo = 0;
+		AttributeSetWeapon->SetCurrentAmmoInClip(
+			AttributeSetWeapon->GetCurrentAmmoInClip() + AttributeSetWeapon->GetTotalCarriedAmmo());
+		AttributeSetWeapon->SetTotalCarriedAmmo(0);
 	}
 	else
 	{
-		CurrentAmmo = WeaponData.ClipCapacity;
-		TotalLeftAmmo -= AmmoDiff;
+		AttributeSetWeapon->SetCurrentAmmoInClip(WeaponData.ClipCapacity);
+		AttributeSetWeapon->SetTotalCarriedAmmo(AttributeSetWeapon->GetTotalCarriedAmmo() - AmmoDiff);
 	}
 }
 
-bool AWeaponBase::CanReload()
+bool AWeaponBase::CanReload() const
 {
-	return TotalLeftAmmo > 0;
+	UAttributeSetWeapon* AttributeSetWeapon = GetWeaponAttributeSet();
+	if (AttributeSetWeapon == nullptr)
+	{
+		return false;
+	}
+
+	return AttributeSetWeapon->GetTotalCarriedAmmo() > 0;
 }
 
 void AWeaponBase::AttachTo(class ACharacterBase* NewPawn)
@@ -286,21 +356,21 @@ void AWeaponBase::ClientFireEffect_Implementation(bool IsHit, const FHitResult& 
 	}
 }
 
-void AWeaponBase::OnRep_CurrentAmmo(int32 OldCurrentAmmo)
-{
-	if (OldCurrentAmmo != CurrentAmmo)
-	{
-		WeaponAmmoChangedDelegate.Broadcast(CurrentAmmo, TotalLeftAmmo);
-	}
-}
+// void AWeaponBase::OnRep_CurrentAmmo(int32 OldCurrentAmmo)
+// {
+// 	if (OldCurrentAmmo != CurrentAmmo)
+// 	{
+// 		WeaponAmmoChangedDelegate.Broadcast(CurrentAmmo, TotalLeftAmmo);
+// 	}
+// }
 
-void AWeaponBase::OnRep_TotalLeftAmmo(int32 OldTotalLeftAmmo)
-{
-	if (OldTotalLeftAmmo != TotalLeftAmmo)
-	{
-		WeaponAmmoChangedDelegate.Broadcast(CurrentAmmo, TotalLeftAmmo);
-	}
-}
+// void AWeaponBase::OnRep_TotalLeftAmmo(int32 OldTotalLeftAmmo)
+// {
+// 	if (OldTotalLeftAmmo != TotalLeftAmmo)
+// 	{
+// 		WeaponAmmoChangedDelegate.Broadcast(CurrentAmmo, TotalLeftAmmo);
+// 	}
+// }
 
 UAttributeSetWeapon* AWeaponBase::GetWeaponAttributeSet() const
 {

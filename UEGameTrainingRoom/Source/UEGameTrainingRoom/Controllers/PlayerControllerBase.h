@@ -8,6 +8,8 @@
 
 #include "PlayerControllerBase.generated.h"
 
+// DECLARE_LOG_CATEGORY_EXTERN(LogUI, Log, All);
+
 /**
  * 
  */
@@ -16,6 +18,15 @@ class UEGAMETRAININGROOM_API APlayerControllerBase
 	: public APlayerController, public IGenericTeamAgentInterface
 {
 	GENERATED_BODY()
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|UI")
+	TSubclassOf<class UPlayerCrosshairUI> CrosshairClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|UI")
+	TSubclassOf<class UPlayerMainUI> MainUIClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	FGenericTeamId TeamId;
 
 public:
 	virtual void BeginPlay() override;
@@ -24,24 +35,20 @@ public:
 
 	void CreateMainUI();
 
-	void CreateHeadUpUI();
+	void OnRep_PlayerState() override;
+
+	FORCEINLINE class UPlayerMainUI* GetMainUI() 
+	{
+		return MainUI;
+	}
 
 protected:
 	FORCEINLINE FGenericTeamId GetGenericTeamId() const { return TeamId; }
 
 protected:
 	UPROPERTY(BlueprintReadWrite, Category = CharacterUI)
-	class UUserWidgetBase* CrosshairUI;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = CharacterUI)
-	TSubclassOf<class UUserWidgetBase> CrosshairClass;
+	class UPlayerCrosshairUI* CrosshairUI;
 
 	UPROPERTY(BlueprintReadWrite, Category = CharacterUI)
-	class UUserWidgetBase* MainUI;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = CharacterUI)
-	TSubclassOf<class UUserWidgetBase> MainUIClass;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	FGenericTeamId TeamId;
+	class UPlayerMainUI* MainUI;
 };

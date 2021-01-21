@@ -12,7 +12,10 @@ public class UEGameTrainingRoom : ModuleRules
 			"Core", "CoreUObject", "Engine", "InputCore", "HeadMountedDisplay", "UMG" });
 
 		PrivateDependencyModuleNames.AddRange(new string[]{
-			"GameplayAbilities"
+			"GameplayAbilities",
+			"GameplayTasks",
+			"GameplayTags"
+
 		});
 
 		PrivateIncludePaths.AddRange(new string[] {
@@ -24,6 +27,7 @@ public class UEGameTrainingRoom : ModuleRules
 			"UEGameTrainingRoom/Controllers",
 			"UEGameTrainingRoom/Shared",
 			"UEGameTrainingRoom/AI",
+			"UEGameTrainingRoom/Abilities",
 			"UEGameTrainingRoom/Components",
 			"UEGameTrainingRoom/States" 
 		});

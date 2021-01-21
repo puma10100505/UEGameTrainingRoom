@@ -54,4 +54,7 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	float AimingSpeed;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	float ReloadTime;
 };

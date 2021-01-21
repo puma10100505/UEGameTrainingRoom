@@ -26,7 +26,20 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, ReplicatedUsing = OnRep_MaxHealth, Category="Character|AttributeSetHealth")
 	FGameplayAttributeData MaxHealth;
 	ATTRIBUTE_ACCESSORS(UAttributeSetHealth, MaxHealth)
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, ReplicatedUsing = OnRep_Armor, Category = "Character|AttributeSetArmor")
+	FGameplayAttributeData Armor;
+	ATTRIBUTE_ACCESSORS(UAttributeSetHealth, Armor)
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, ReplicatedUsing = OnRep_Armor, Category = "Character|AttributeSetArmor")
+	FGameplayAttributeData MaxArmor;
+	ATTRIBUTE_ACCESSORS(UAttributeSetHealth, MaxArmor)
 	
+public: 	// Meta Attributes
+	UPROPERTY(BlueprintReadOnly, Category = "Character|AttributeSetHealth", meta = (HideFromLevelInfos))
+	FGameplayAttributeData Damage;
+	ATTRIBUTE_ACCESSORS(UAttributeSetHealth, Damage)
+
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
@@ -36,5 +49,11 @@ protected:
 	UFUNCTION()
 	void OnRep_MaxHealth(const FGameplayAttributeData& Data);
 
+	UFUNCTION()
+	void OnRep_Armor(const FGameplayAttributeData& OldArmor);
+
+	UFUNCTION()
+	void OnRep_MaxArmor(const FGameplayAttributeData& OldMaxArmor);
+	
 	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
 };

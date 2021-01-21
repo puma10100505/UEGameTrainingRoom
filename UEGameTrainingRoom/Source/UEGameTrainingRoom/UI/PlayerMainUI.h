@@ -17,15 +17,25 @@ class UEGAMETRAININGROOM_API UPlayerMainUI : public UUserWidgetBase
 public:
 	virtual bool Initialize() override;
 
-protected:
-	UFUNCTION()
-	void OnAmmoChanged(int32 InCurrentAmmo, int32 InTotalLeftAmmo);
+	FORCEINLINE void SetCurrentAmmoInClip(const int32 AmmoNum) 
+	{
+		CurrentAmmoInClip = AmmoNum;
+	}
 
-	UFUNCTION()
-	void OnHealthChanged(float NewHealth, float MaxHealth);
+	FORCEINLINE void SetTotalCarriedAmmo(const int32 AmmoNum)
+	{
+		TotalCarriedAmmo = AmmoNum;
+	}
 
-	UFUNCTION()
-	void OnArmorChanged(float NewArmor, float MaxArmor);
+	FORCEINLINE void SetHealth(const float CurrentHealth, const float MaxHealth) 
+	{
+		HealthPercent = CalcPercent(CurrentHealth, MaxHealth);
+	}
+
+	FORCEINLINE void SetArmor(const float CurrentArmor, const float MaxArmor)
+	{
+		ArmorPercent = CalcPercent(CurrentArmor, MaxArmor);
+	}
 
 protected:
 	UPROPERTY(BlueprintReadWrite, Category = Default)
@@ -35,8 +45,8 @@ protected:
 	float ArmorPercent;
 
 	UPROPERTY(BlueprintReadWrite, Category = Default)
-	int32 CurrentAmmo;
+	int32 CurrentAmmoInClip;
 
 	UPROPERTY(BlueprintReadWrite, Category = Default)
-	int32 TotalLeftAmmo;
+	int32 TotalCarriedAmmo;
 };

@@ -23,7 +23,7 @@
 #include "PlayerControllerBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "Attributes/AttributeSetHealth.h"
-#include "Attributes/AttributeSetArmor.h"
+// #include "Attributes/AttributeSetArmor.h"
 
 DEFINE_LOG_CATEGORY(LogCharacter);
 
@@ -83,8 +83,17 @@ void ACharacterBase::InitializeASCFromPlayerState()
 		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS, this);
 
 		AttributeSetHealth = PS->GetAttributeSetHealth();
+		// AttributeSetArmor = PS->GetAttributeSetArmor();
 
-		AttributeSetArmor = PS->GetAttributeSetArmor();
+		// if (PrimaryWeapon)
+		// {
+		// 	UAttributeSetWeapon* AttributeSetWeapon = PrimaryWeapon->GetWeaponAttributeSet();
+		// 	if (IsValid(AttributeSetWeapon))
+		// 	{
+		// 		AbilitySystem->AddAttributeSetSubobject<UAttributeSetWeapon>(AttributeSetWeapon);
+		// 		UE_LOG(LogCharacter, Log, TEXT("After add weapon attributeset into ASC of character"));
+		// 	}
+		// }
 
 		if (DefaultAttributes)
 		{
@@ -93,7 +102,8 @@ void ACharacterBase::InitializeASCFromPlayerState()
 			FGameplayEffectSpecHandle NewHandle = AbilitySystem->MakeOutgoingSpec(DefaultAttributes, 1.f, EffectContext);
 			if (NewHandle.IsValid())
 			{
-				FActiveGameplayEffectHandle ActiveGEHandle = AbilitySystem->ApplyGameplayEffectSpecToSelf(*NewHandle.Data.Get());
+				//FActiveGameplayEffectHandle ActiveGEHandle = 
+				AbilitySystem->ApplyGameplayEffectSpecToSelf(*NewHandle.Data.Get());
 			}
 		}
 	}
@@ -129,7 +139,7 @@ void ACharacterBase::InitializeHeadUpUI()
 
 				// 设置HeadUpUI的初始值
 				HeadUpUIInstance->SetHealthPercentage(GetAttributeSetHealth()->GetHealth(), GetAttributeSetHealth()->GetMaxHealth());
-				HeadUpUIInstance->SetArmorPercentage(GetAttributeSetArmor()->GetArmor(), GetAttributeSetArmor()->GetMaxArmor());
+				HeadUpUIInstance->SetArmorPercentage(GetAttributeSetHealth()->GetArmor(), GetAttributeSetHealth()->GetMaxArmor());
 				HeadUpUIInstance->SetOwningCharacter(this);
 			}
 		}
@@ -154,9 +164,20 @@ void ACharacterBase::InitializeDefaultAbilities()
 		return;		
 	}
 
-	for (TSubclassOf<UGameplayAbility>& DefaultAbilityItem: DefaultAbilities)
-	{		
-		AbilitySystem->GiveAbility(FGameplayAbilitySpec(DefaultAbilityItem, 1.f, INDEX_NONE, this));		
+	// 初始化开火技能
+	if (FireAbility)
+	{
+		GameplayAbility_FireHandle = AbilitySystem->GiveAbility(FGameplayAbilitySpec(FireAbility, 1.f, INDEX_NONE, this));
+	}
+
+	if (ADSAbility)
+	{
+		GameplayAbility_ADSHandle = AbilitySystem->GiveAbility(FGameplayAbilitySpec(ADSAbility, 1.f, INDEX_NONE, this));
+	}
+
+	if (ReloadAbility)
+	{
+		GameplayAbility_ReloadHandle = AbilitySystem->GiveAbility(FGameplayAbilitySpec(ReloadAbility, 1.f, INDEX_NONE, this));
 	}
 
 	bAbilityGranted = true;
@@ -260,8 +281,8 @@ void ACharacterBase::SetPreparedForBattle()
 
 void ACharacterBase::InitializeAttributes()
 {
-	Health = MaxHealth;
-	Armor = MaxArmor;
+	// Health = MaxHealth;
+	// Armor = MaxArmor;
 	bIsAiming = false;
 	bIsFiring = false;
 	bIsPreparingFire = false;
@@ -278,7 +299,7 @@ void ACharacterBase::InitializeAttributes()
 	}
 
 
-	UE_LOG(LogCharacter, Log, TEXT("After init, health: %f, armor: %f"), Health, Armor);
+	// UE_LOG(LogCharacter, Log, TEXT("After init, health: %f, armor: %f"), Health, Armor);
 }
 
 void ACharacterBase::PostInitializeComponents()
@@ -327,13 +348,14 @@ void ACharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	PlayerInputComponent->BindAxis("LookUpRate", this, &ACharacterBase::LookUpAtRate);
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
-	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &ACharacterBase::OnStartFire);
-	PlayerInputComponent->BindAction("Fire", IE_Released, this, &ACharacterBase::OnStopFire);
-	PlayerInputComponent->BindAction("Aim", IE_Pressed, this, &ACharacterBase::SwitchToAiming);
-	PlayerInputComponent->BindAction("Aim", IE_Released, this, &ACharacterBase::RecoveryFromAiming);
-	PlayerInputComponent->BindAction("AbilityRocket", IE_Pressed, this, &ACharacterBase::LaunchRocket);
 
-	//BindAbilityInput();
+	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &ACharacterBase::ActivateFireAbility);
+	PlayerInputComponent->BindAction("Fire", IE_Released, this, &ACharacterBase::CancelFireAbility);
+	PlayerInputComponent->BindAction("Aim", IE_Pressed, this, &ACharacterBase::ActivateADSAbility);
+	PlayerInputComponent->BindAction("Aim", IE_Released, this, &ACharacterBase::DeactivateADSAbility);
+	PlayerInputComponent->BindAction("Reload", IE_Pressed, this, &ACharacterBase::ActivateReloadAbility);
+
+	PlayerInputComponent->BindAction("AbilityRocket", IE_Pressed, this, &ACharacterBase::LaunchRocket);
 }
 
 void ACharacterBase::OnStartFire()
@@ -351,13 +373,15 @@ void ACharacterBase::OnStartFire()
 		return;
 	}
 
-	GetWorldTimerManager().SetTimer(TimerHandle_Fire, this, &ACharacterBase::Fire, 
-		PrimaryWeapon->GetWeaponModelData().FireInterval, true, 0.f);
+	// GetWorldTimerManager().SetTimer(TimerHandle_Fire, this, &ACharacterBase::Fire, 
+	// 	PrimaryWeapon->GetWeaponModelData().FireInterval, true, 0.f);
+
+	Fire();
 }
 
 void ACharacterBase::OnStopFire()
 {
-	GetWorldTimerManager().ClearTimer(TimerHandle_Fire);
+	//GetWorldTimerManager().ClearTimer(TimerHandle_Fire);
 }
 
 void ACharacterBase::Fire()
@@ -410,11 +434,11 @@ void ACharacterBase::LookUpAtRate(float Rate)
 	AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
 }
 
-bool ACharacterBase::CanFire()
+bool ACharacterBase::CanFire() const
 {
 	if (bIsPreparedForBattle == false)
 	{
-		UE_LOG(LogCharacter, Warning, TEXT("Not prepared for battle"));
+		UE_LOG(LogCharacter, Log, TEXT("Not prepared for battle"));
 		return false;
 	}
 
@@ -433,7 +457,7 @@ bool ACharacterBase::CanFire()
 	return true;
 }
 
-bool ACharacterBase::CanReload()
+bool ACharacterBase::CanReload() const
 {
 	if (bIsPreparedForBattle == false)
 	{
@@ -441,6 +465,27 @@ bool ACharacterBase::CanReload()
 	}
 
 	return true;
+}
+
+void ACharacterBase::ActivateADSAbility()
+{
+	if (GameplayAbility_ADSHandle.IsValid() && IsValid(AbilitySystem))
+	{
+		if (AbilitySystem->TryActivateAbility(GameplayAbility_ADSHandle) == false)
+		{
+			UE_LOG(LogCharacter, Warning, TEXT("Activate fire ability failed"));
+		}
+	}
+}
+
+void ACharacterBase::DeactivateADSAbility()
+{
+	if (GameplayAbility_ADSHandle.IsValid() && IsValid(AbilitySystem))
+	{
+		AbilitySystem->CancelAbilityHandle(GameplayAbility_ADSHandle);
+
+		UE_LOG(LogCharacter, Log, TEXT("Cancel ADS Ability"));
+	}
 }
 
 void ACharacterBase::SwitchToAiming()
@@ -451,10 +496,10 @@ void ACharacterBase::SwitchToAiming()
 		return;
 	}
 
-	if (GetLocalRole() < ROLE_Authority)
-	{
-		ServerSwitchToAiming();
-	}
+	// if (GetLocalRole() < ROLE_Authority)
+	// {
+	// 	ServerSwitchToAiming();
+	// }
 
 	if (IsValid(PrimaryWeapon) == false)
 	{
@@ -481,10 +526,10 @@ void ACharacterBase::RecoveryFromAiming()
 		return;
 	}
 
-	if (GetLocalRole() < ROLE_Authority)
-	{
-		ServerRecoveryFromAiming();
-	}
+	// if (GetLocalRole() < ROLE_Authority)
+	// {
+	// 	ServerRecoveryFromAiming();
+	// }
 
 	if (IsValid(PrimaryWeapon) == false)
 	{
@@ -508,6 +553,8 @@ void ACharacterBase::OnRep_PrimaryWeapon(AWeaponBase* LastWeapon)
 {
 	UE_LOG(LogCharacter, Log, TEXT("Entry of OnRep PrimaryWeapon, Role: %d, NetMode: %d, PrimaryWeapon is null: %d, LastWeapon is null: %d"), 
 		GetLocalRole(), GetNetMode(), PrimaryWeapon == nullptr, LastWeapon == nullptr);
+
+	
 }
 
 void ACharacterBase::InterplateMoveSpeed()
@@ -526,8 +573,8 @@ void ACharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(ACharacterBase, Health);
-	DOREPLIFETIME(ACharacterBase, Armor);
+	// DOREPLIFETIME(ACharacterBase, Health);
+	// DOREPLIFETIME(ACharacterBase, Armor);
 	DOREPLIFETIME(ACharacterBase, bIsFiring);
 	DOREPLIFETIME(ACharacterBase, bIsAiming);
 	DOREPLIFETIME(ACharacterBase, PrimaryWeapon);
@@ -536,6 +583,9 @@ void ACharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(ACharacterBase, bIsPreparingFire);	
 	DOREPLIFETIME(ACharacterBase, bWantsToAim);
 	DOREPLIFETIME(ACharacterBase, bIsPreparedForBattle);
+	DOREPLIFETIME(ACharacterBase, GameplayAbility_FireHandle);
+	DOREPLIFETIME(ACharacterBase, GameplayAbility_ADSHandle);
+	DOREPLIFETIME(ACharacterBase, GameplayAbility_ReloadHandle);
 }
 
 bool ACharacterBase::ServerModifyMoveSpeed_Validate(float NewSpeed)
@@ -598,7 +648,7 @@ void ACharacterBase::TakeHurt(const AWeaponBase* SourceWeapon, float Distance)
 
 			ChangeLife(-RealDamage);
 
-			if (Health <= 0.f)
+			if (AttributeSetHealth->GetHealth() <= 0.f)
 			{
 				KillToDeath();
 			}
@@ -608,30 +658,37 @@ void ACharacterBase::TakeHurt(const AWeaponBase* SourceWeapon, float Distance)
 
 void ACharacterBase::ChangeLife(float Value)
 {
-	const float OldArmor = Armor;
-	const float OldHealth = Health;
+	// TODO: Use GameplayEffect to modify health and armor
 
-	if (Armor > 0)
-	{
-		Armor += Value;
-		if (Armor < 0)
-		{
-			Health += Armor;
-			Armor = 0;
-		}
-	}
-	else 
-	{
-		Health += Value;
-	}
+	// if (AttributeSetArmor == nullptr || AttributeSetHealth == nullptr)
+	// {
+	// 	return;
+	// }
 
-	if (Health < 0) 
-	{
-		Health = 0;
-	}
+	// const float OldArmor = AttributeSetArmor->GetCurrentArmor();
+	// const float OldHealth = AttributeSetHealth->GetCurrentHealth();
+
+	// if (GetArmor() > 0)
+	// {
+	// 	Armor += Value;
+	// 	if (Armor < 0)
+	// 	{
+	// 		Health += Armor;
+	// 		Armor = 0;
+	// 	}
+	// }
+	// else 
+	// {
+	// 	Health += Value;
+	// }
+
+	// if (Health < 0) 
+	// {
+	// 	Health = 0;
+	// }
 	
-	UE_LOG(LogCharacter, Log, TEXT("OldArmor: %f, CurrArmor: %f, OldHealth: %f, CurrHealth: %f"), 
-		OldArmor, Armor, OldHealth, Health);
+	// UE_LOG(LogCharacter, Log, TEXT("OldArmor: %f, CurrArmor: %f, OldHealth: %f, CurrHealth: %f"), 
+	// 	OldArmor, Armor, OldHealth, Health);
 }
 
 void ACharacterBase::FaceToTarget(const FVector& TargetLocation)
@@ -671,21 +728,21 @@ void ACharacterBase::KillToDeath()
 	AfterCharacterDeath();
 }
 
-void ACharacterBase::OnRep_HealthChanged(float OldHealth)
-{
-	if (OldHealth != Health)
-	{
-		OnHealthChangedDelegator.Broadcast(Health, MaxHealth);
-	}
-}
+// void ACharacterBase::OnRep_HealthChanged(float OldHealth)
+// {
+// 	if (OldHealth != Health)
+// 	{
+// 		OnHealthChangedDelegator.Broadcast(Health, MaxHealth);
+// 	}
+// }
 
-void ACharacterBase::OnRep_ArmorChanged(float OldArmor)
-{
-	if (OldArmor != Armor)
-	{
-		OnArmorChangedDelegator.Broadcast(Armor, MaxArmor);
-	}
-}
+// void ACharacterBase::OnRep_ArmorChanged(float OldArmor)
+// {
+// 	if (OldArmor != Armor)
+// 	{
+// 		OnArmorChangedDelegator.Broadcast(Armor, MaxArmor);
+// 	}
+// }
 
 void ACharacterBase::AfterCharacterDeath_Implementation()
 {
@@ -712,7 +769,39 @@ UAttributeSetHealth* ACharacterBase::GetAttributeSetHealth() const
 	return AttributeSetHealth;
 }
 
-UAttributeSetArmor* ACharacterBase::GetAttributeSetArmor() const
+// UAttributeSetArmor* ACharacterBase::GetAttributeSetArmor() const
+// {
+// 	return AttributeSetArmor;
+// }
+
+void ACharacterBase::ActivateReloadAbility()
 {
-	return AttributeSetArmor;
+	if (GameplayAbility_ReloadHandle.IsValid() && IsValid(AbilitySystem))
+	{
+		if (AbilitySystem->TryActivateAbility(GameplayAbility_ReloadHandle) == false)
+		{
+			UE_LOG(LogCharacter, Warning, TEXT("Activate reload ability failed"));
+		}
+	}
+}
+
+void ACharacterBase::ActivateFireAbility()
+{
+	if (GameplayAbility_FireHandle.IsValid() && IsValid(AbilitySystem))
+	{
+		if (AbilitySystem->TryActivateAbility(GameplayAbility_FireHandle) == false)
+		{
+			UE_LOG(LogCharacter, Warning, TEXT("Activate fire ability failed"));
+		}
+	}
+}
+
+void ACharacterBase::CancelFireAbility()
+{
+	if (GameplayAbility_FireHandle.IsValid() && IsValid(AbilitySystem))
+	{
+		AbilitySystem->CancelAbilityHandle(GameplayAbility_FireHandle);
+
+		UE_LOG(LogCharacter, Log, TEXT("Cancel fire ability"));
+	}
 }

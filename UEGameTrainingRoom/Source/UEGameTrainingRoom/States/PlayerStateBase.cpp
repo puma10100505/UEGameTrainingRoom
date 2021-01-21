@@ -3,11 +3,10 @@
 
 #include "PlayerStateBase.h"
 #include "AbilitySystemComponent.h"
-#include "Attributes/AttributeSetArmor.h"
-#include "Attributes/AttributeSetHealth.h"
-#include "Attributes/AttributeSetWeapon.h"
 #include "CharacterBase.h"
 #include "PlayerHeadUpUI.h"
+#include "PlayerControllerBase.h"
+#include "PlayerMainUI.h"
 
 
 APlayerStateBase::APlayerStateBase()
@@ -17,7 +16,6 @@ APlayerStateBase::APlayerStateBase()
     AbilitySystem->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
 
     AttributeSetHealth = CreateDefaultSubobject<UAttributeSetHealth>(TEXT("AttributeSetHealth"));
-    AttributeSetArmor = CreateDefaultSubobject<UAttributeSetArmor>(TEXT("AttributeSetArmor"));
     AttributeSetWeapon = CreateDefaultSubobject<UAttributeSetWeapon>(TEXT("AttributeSetWeapon"));
 
     NetUpdateFrequency = 100.f;
@@ -27,9 +25,58 @@ void APlayerStateBase::BeginPlay()
 {
     Super::BeginPlay();
 
-    // TODO: 注册属性变更回调, 在属性变更处理函数中调用UI接口更新UI数据
-    AbilitySystem->GetGameplayAttributeValueChangeDelegate(
-        AttributeSetHealth->GetHealthAttribute()).AddUObject(this, &APlayerStateBase::OnHealthAttributeChanged);
+    HealthAttributeChangeHandle = AbilitySystem->GetGameplayAttributeValueChangeDelegate(AttributeSetHealth->GetHealthAttribute()).AddUObject(this, &APlayerStateBase::OnHealthAttributeChanged);
+    ArmorAttributeChangeHandle = AbilitySystem->GetGameplayAttributeValueChangeDelegate(AttributeSetHealth->GetArmorAttribute()).AddUObject(this, &APlayerStateBase::OnArmorAttributeChanged);
+    CurrentAmmoInClipAttributeChangeHandle = AbilitySystem->GetGameplayAttributeValueChangeDelegate(AttributeSetWeapon->GetCurrentAmmoInClipAttribute()).AddUObject(this, &APlayerStateBase::OnCurrentAmmoInClipChanged);
+    TotalCarriedAmmoAttributeChangeHandle = AbilitySystem->GetGameplayAttributeValueChangeDelegate(AttributeSetWeapon->GetTotalCarriedAmmoAttribute()).AddUObject(this, &APlayerStateBase::OnTotalCarriedAmmoChanged);
+}
+
+void APlayerStateBase::OnCurrentAmmoInClipChanged(const FOnAttributeChangeData& Data)
+{
+    ACharacterBase* Character = Cast<ACharacterBase>(GetPawn());
+    if (Character)
+    {
+        // 只有玩家自己可以看到MAINUI的变更
+        if (Character->IsPlayerControlled() && Character->IsLocallyControlled())
+        {
+            APlayerControllerBase* PC = Cast<APlayerControllerBase>(Character->GetController());
+            if (IsValid(PC) == false)
+            {
+                UE_LOG(LogCharacter, Warning, TEXT("Not found player controller"));
+                return;
+            }
+
+            UPlayerMainUI* Widget = PC->GetMainUI();
+            if (Widget)
+            {
+                Widget->SetCurrentAmmoInClip(Data.NewValue);
+            }
+        }
+    }
+}
+
+void APlayerStateBase::OnTotalCarriedAmmoChanged(const FOnAttributeChangeData& Data)
+{
+    ACharacterBase* Character = Cast<ACharacterBase>(GetPawn());
+    if (Character)
+    {
+        // 只有玩家自己可以看到MAINUI的变更
+        if (Character->IsPlayerControlled() && Character->IsLocallyControlled())
+        {
+            APlayerControllerBase* PC = Cast<APlayerControllerBase>(Character->GetController());
+            if (IsValid(PC) == false)
+            {
+                UE_LOG(LogCharacter, Warning, TEXT("Not found player controller"));
+                return;
+            }
+
+            UPlayerMainUI* Widget = PC->GetMainUI();
+            if (Widget)
+            {
+                Widget->SetTotalCarriedAmmo(Data.NewValue);
+            }
+        }
+    }
 }
 
 void APlayerStateBase::OnHealthAttributeChanged(const FOnAttributeChangeData& Data)
@@ -37,10 +84,59 @@ void APlayerStateBase::OnHealthAttributeChanged(const FOnAttributeChangeData& Da
     ACharacterBase* Character = Cast<ACharacterBase>(GetPawn());
     if (Character)
     {
-        UPlayerHeadUpUI* HeadUpUI = Character->GetHeadUpUIInstance();
-        if (HeadUpUI)
+        if (Character->IsPlayerControlled() == false || Character->IsLocallyControlled() == false)
         {
-            HeadUpUI->SetHealthPercentage(Data.NewValue, AttributeSetHealth->GetMaxHealth());
+            UPlayerHeadUpUI* HeadUpUI = Character->GetHeadUpUIInstance();
+            if (HeadUpUI)
+            {
+                HeadUpUI->SetHealthPercentage(Data.NewValue, AttributeSetHealth->GetMaxHealth());
+            }
+        }
+        else
+        {
+            APlayerControllerBase* PC = Cast<APlayerControllerBase>(Character->GetController());
+            if (IsValid(PC) == false)
+            {
+                UE_LOG(LogCharacter, Warning, TEXT("Not found player controller"));
+                return;
+            }
+
+            UPlayerMainUI* Widget = PC->GetMainUI();
+            if (Widget)
+            {
+                Widget->SetHealth(Data.NewValue, GetMaxHealth());
+            }
+        }
+    }
+}
+
+void APlayerStateBase::OnArmorAttributeChanged(const FOnAttributeChangeData& Data)
+{
+    ACharacterBase* Character = Cast<ACharacterBase>(GetPawn());
+    if (Character)
+    {
+        if (Character->IsPlayerControlled() == false || Character->IsLocallyControlled() == false)
+        {
+            UPlayerHeadUpUI* HeadUpUI = Character->GetHeadUpUIInstance();
+            if (HeadUpUI)
+            {
+                HeadUpUI->SetArmorPercentage(Data.NewValue, AttributeSetHealth->GetMaxArmor());
+            }
+        }
+        else
+        {
+            APlayerControllerBase* PC = Cast<APlayerControllerBase>(Character->GetController());
+            if (IsValid(PC) == false)
+            {
+                UE_LOG(LogCharacter, Warning, TEXT("Not found player controller"));
+                return;
+            }
+
+            UPlayerMainUI* Widget = PC->GetMainUI();
+            if (Widget)
+            {
+                Widget->SetArmor(Data.NewValue, GetMaxArmor());
+            }
         }
     }
 }
@@ -56,10 +152,10 @@ UAttributeSetHealth* APlayerStateBase::GetAttributeSetHealth() const
     return AttributeSetHealth;
 }
 
-UAttributeSetArmor* APlayerStateBase::GetAttributeSetArmor() const 
-{
-    return AttributeSetArmor;
-}
+// UAttributeSetArmor* APlayerStateBase::GetAttributeSetArmor() const 
+// {
+//     return AttributeSetArmor;
+// }
 
 UAttributeSetWeapon* APlayerStateBase::GetAttributeSetWeapon() const 
 {

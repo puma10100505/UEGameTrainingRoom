@@ -18,12 +18,6 @@ class UEGAMETRAININGROOM_API UPlayerHeadUpUI : public UUserWidgetBase
 public:
 	UPlayerHeadUpUI(const FObjectInitializer& ObjectInitializer);
 
-	// UFUNCTION()
-	// void OnHealthChanged(float NewHealth, float MaxHealth);
-	//
-	// UFUNCTION()
-	// void OnArmorChanged(float NewArmor, float MaxArmor);
-
 	virtual bool Initialize() override;
 
 	UFUNCTION(BlueprintCallable)

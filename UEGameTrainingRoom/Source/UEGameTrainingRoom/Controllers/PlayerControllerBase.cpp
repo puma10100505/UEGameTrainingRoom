@@ -3,9 +3,12 @@
 
 #include "PlayerControllerBase.h"
 #include "Blueprint/UserWidget.h"
+#include "PlayerStateBase.h"
+#include "PlayerCrosshairUI.h"
+#include "PlayerMainUI.h"
 #include "UserWidgetBase.h"
 
-
+// DEFINE_LOG_CATEGORY(LogUI);
 
 void APlayerControllerBase::BeginPlay()
 {
@@ -16,22 +19,20 @@ void APlayerControllerBase::BeginPlay()
 	{
 		if (CrosshairClass != nullptr)
 		{
-			CrosshairUI = CreateWidget<UUserWidgetBase>(this, CrosshairClass);
+			CrosshairUI = CreateWidget<UPlayerCrosshairUI>(this, CrosshairClass);
 			if (IsValid(CrosshairUI))
 			{
 				CrosshairUI->AddToViewport();
 			}
 		}
-
-		// if (MainUIClass != nullptr)
-		// {
-		// 	MainUI = CreateWidget<UUserWidgetBase>(this, MainUIClass);
-		// 	if (IsValid(MainUI))
-		// 	{
-		// 		MainUI->AddToViewport();
-		// 	}
-		// }
 	}
+}
+
+void APlayerControllerBase::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+
+	CreateMainUI();
 }
 
 void APlayerControllerBase::OnPossess(APawn* aPawn)
@@ -41,10 +42,40 @@ void APlayerControllerBase::OnPossess(APawn* aPawn)
 
 void APlayerControllerBase::CreateMainUI()
 {
-	// TODO: 创建玩家主UI界面
-}
+	if (MainUI)
+	{
+		UE_LOG(LogUI, Warning, TEXT("MainUI has already created"));
+		return;
+	}
 
-void APlayerControllerBase::CreateHeadUpUI()
-{
-	// TODO: 创建人物头顶UI信息条，只对当前控制玩家以外的人物对象创建
+	if (!IsLocalPlayerController())
+	{
+		UE_LOG(LogUI, Warning, TEXT("Current controller is not local player controller"));
+		return;
+	}
+
+	if (!MainUIClass)
+	{
+		UE_LOG(LogUI, Warning, TEXT("MainUIClass is not configured"));
+		return;
+	}
+
+	APlayerStateBase* PS = GetPlayerState<APlayerStateBase>();
+	if (IsValid(PS) == false)
+	{
+		UE_LOG(LogUI, Warning, TEXT("Not found player state"));
+		return;
+	}
+
+	MainUI = CreateWidget<UPlayerMainUI>(this, MainUIClass);
+	if (MainUI)
+	{
+		MainUI->AddToViewport();
+	}
+
+	// Setting init data
+	MainUI->SetHealth(PS->GetHealth(), PS->GetMaxHealth());
+	MainUI->SetArmor(PS->GetArmor(), PS->GetMaxArmor());
+	MainUI->SetCurrentAmmoInClip(PS->GetCurrentAmmoInClip());
+	MainUI->SetTotalCarriedAmmo(PS->GetTotalCarriedAmmo());
 }
