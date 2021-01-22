@@ -215,7 +215,6 @@ void AWeaponBase::InitializeWeaponData()
 		AttributeSetWeapon->SetCurrentAmmoInClip(WeaponData.ClipCapacity);
 		AttributeSetWeapon->SetTotalCarriedAmmo(WeaponData.MaxAmmo);
 	}
-
 }
 
 void AWeaponBase::ConsumeAmmo()
@@ -232,7 +231,10 @@ void AWeaponBase::ConsumeAmmo()
 
 	if (NeedReload())
 	{
-		Reload();
+		if (GetOwnerCharacter())
+		{
+			GetOwnerCharacter()->ActivateReloadAbility();
+		}
 	}
 }
 

@@ -49,8 +49,14 @@ void UGameplayAbility_CharacterFire::OnPerformFire(int32 Count)
 {
 	if (IsValid(Character) && IsValid(Character->GetCurrentWeapon()))
 	{
-		// Character->OnStartFire();
-		Character->GetCurrentWeapon()->FireProcess();
+		if (Character->CanFire())
+		{
+			Character->GetCurrentWeapon()->FireProcess();
+		}
+		else
+		{
+			EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, false);
+		}
 	}
 }
 

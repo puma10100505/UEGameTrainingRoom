@@ -47,7 +47,7 @@ void UGameplayAbility_CharacterReload::OnReloadFinished()
         Character->GetCurrentWeapon()->Reload();
     }
 
-    EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
+    EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, false);
 }
 
 bool UGameplayAbility_CharacterReload::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, 
@@ -60,8 +60,8 @@ bool UGameplayAbility_CharacterReload::CanActivateAbility(const FGameplayAbility
     }
 
     const ACharacterBase* CurrentCharacter = CastChecked<ACharacterBase>(ActorInfo->AvatarActor.Get(), ECastCheckedType::NullAllowed);
-    return (CurrentCharacter && CurrentCharacter->CanReload() && 
-        CurrentCharacter->GetCurrentWeapon() && CurrentCharacter->GetCurrentWeapon()->CanReload());
+    bool ret = (CurrentCharacter && CurrentCharacter->CanReload());
+    return ret;
 }
 
 void UGameplayAbility_CharacterReload::CancelAbility(const FGameplayAbilitySpecHandle Handle, 

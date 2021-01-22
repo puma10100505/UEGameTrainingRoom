@@ -454,17 +454,34 @@ bool ACharacterBase::CanFire() const
 		return false;
 	}
 
+	if (GetCurrentWeapon())
+	{
+		return GetCurrentWeapon()->CanFire();
+	}
+
 	return true;
 }
 
 bool ACharacterBase::CanReload() const
 {
+	bool ret = true;
 	if (bIsPreparedForBattle == false)
 	{
-		return false;
+		ret = false;
 	}
 
-	return true;
+	if (IsValid(GetCurrentWeapon()) == false)
+	{
+		// return GetCurrentWeapon()->CanReload();
+		ret = false;
+	}
+
+	if (GetCurrentWeapon()->CanReload() == false)
+	{
+		ret = false;
+	}
+
+	return ret;
 }
 
 void ACharacterBase::ActivateADSAbility()
@@ -728,21 +745,6 @@ void ACharacterBase::KillToDeath()
 	AfterCharacterDeath();
 }
 
-// void ACharacterBase::OnRep_HealthChanged(float OldHealth)
-// {
-// 	if (OldHealth != Health)
-// 	{
-// 		OnHealthChangedDelegator.Broadcast(Health, MaxHealth);
-// 	}
-// }
-
-// void ACharacterBase::OnRep_ArmorChanged(float OldArmor)
-// {
-// 	if (OldArmor != Armor)
-// 	{
-// 		OnArmorChangedDelegator.Broadcast(Armor, MaxArmor);
-// 	}
-// }
 
 void ACharacterBase::AfterCharacterDeath_Implementation()
 {
@@ -768,11 +770,6 @@ UAttributeSetHealth* ACharacterBase::GetAttributeSetHealth() const
 {
 	return AttributeSetHealth;
 }
-
-// UAttributeSetArmor* ACharacterBase::GetAttributeSetArmor() const
-// {
-// 	return AttributeSetArmor;
-// }
 
 void ACharacterBase::ActivateReloadAbility()
 {

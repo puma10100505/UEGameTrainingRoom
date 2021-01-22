@@ -41,12 +41,11 @@ public:
 
 	virtual class UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	void FireProcess();
+	bool CanFire();
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
-	bool CanFire();
 
 	virtual void PostInitializeComponents() override;
 
@@ -60,10 +59,6 @@ protected:
 
 	virtual bool NeedReload();
 
-	
-
-	
-
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -76,6 +71,7 @@ public:
 
 	class UAttributeSetWeapon* GetWeaponAttributeSet() const ;
 
+	UFUNCTION(BlueprintCallable)
 	FORCEINLINE float GetCurrentAmmoInClip() const 
 	{
 		UAttributeSetWeapon* Attr = GetWeaponAttributeSet();
@@ -89,6 +85,7 @@ public:
 		}
 	}
 
+	UFUNCTION(BlueprintCallable)
 	FORCEINLINE float GetTotalCarriedAmmo() const 
 	{
 		UAttributeSetWeapon* Attr = GetWeaponAttributeSet();
